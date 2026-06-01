@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBDC — Controle de Horas Extras</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a}
+.wrap{padding:1.5rem 1.25rem;max-width:1200px;margin:0 auto}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #ddd;flex-wrap:wrap;gap:12px}
+.logo-sub{font-size:10px;color:#007e6a;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.title-area{text-align:right}
+.title-area h1{font-size:16px;font-weight:500;color:#1a1a1a}
+.toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.toolbar input[type=text]{flex:1;min-width:180px;font-size:13px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a}
+.btn-add{background:#007e6a;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-add:hover{background:#005f50}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1.25rem}
+.stat{background:#fff;border-radius:8px;padding:.75rem 1rem;border:1px solid #e8e8e4}
+.stat-label{font-size:11px;color:#666;margin-bottom:4px}
+.stat-val{font-size:22px;font-weight:500;color:#1a1a1a}
+.stat-val.pend{color:#854f0b}
+.stat-val.aprov{color:#0f6e56}
+.stat-val.neg{color:#a32d2d}
+.table-wrap{overflow-x:auto;border:1px solid #ddd;border-radius:12px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+thead th{background:#f8f8f5;padding:10px;text-align:left;font-weight:500;font-size:11px;color:#666;border-bottom:1px solid #ddd;white-space:nowrap}
+tbody tr{border-bottom:1px solid #f0f0ec;transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#fafafa}
+td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-size:12px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.b-pendente{background:#faeeda;color:#854f0b}
+.b-aprovado{background:#e1f5ee;color:#0f6e56}
+.b-negado{background:#fcebeb;color:#a32d2d}
+.avatar{width:28px;height:28px;border-radius:50%;background:#e6f1fb;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#185fa5;flex-shrink:0}
+.avatar-g{background:#eaf3de;color:#3b6d11}
+.btn-icon{background:none;border:none;cursor:pointer;font-size:15px;padding:3px 6px;border-radius:6px;font-weight:500}
+.btn-apr{color:#0f6e56;border:1px solid #9fe1cb;background:#e1f5ee}
+.btn-apr:hover{background:#9fe1cb}
+.btn-neg{color:#a32d2d;border:1px solid #f7c1c1;background:#fcebeb;margin-left:4px}
+.btn-neg:hover{background:#f7c1c1}
+.btn-del{color:#888;border:none;background:none;margin-left:4px}
+.btn-del:hover{color:#a32d2d;background:#fcebeb}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;border:1px solid #ddd;padding:1.5rem;width:min(560px,96vw);max-height:90vh;overflow-y:auto}
+.modal h2{font-size:16px;font-weight:500;margin-bottom:1.25rem}
+.form-row{margin-bottom:1rem}
+.form-row label{display:block;font-size:12px;color:#555;margin-bottom:4px;font-weight:500}
+.form-row input,.form-row textarea,.form-row select{width:100%;font-size:13px;padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-family:Arial,sans-serif}
+.form-row textarea{resize:vertical;min-height:64px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #eee}
+.btn-cancel{background:none;border:1px solid #ccc;color:#333;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer}
+.btn-cancel:hover{background:#f5f5f0}
+.btn-save{background:#007e6a;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer}
+.btn-save:hover{background:#005f50}
+.empty{text-align:center;padding:2.5rem;color:#888;font-size:13px}
+.sync-badge{font-size:11px;color:#888;display:flex;align-items:center;gap:5px;margin-left:auto}
+.dot-live{width:7px;height:7px;border-radius:50%;background:#1d9e75;display:inline-block;animation:pulse 2s infinite}
+.dot-offline{width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.aprov-info{font-size:11px;color:#0f6e56;margin-top:4px;display:flex;align-items:center;gap:4px}
+.neg-info{font-size:11px;color:#a32d2d;margin-top:4px;display:flex;align-items:center;gap:4px}
+.filter-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.tab{background:#fff;border:1px solid #ddd;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;color:#555;transition:all .15s}
+.tab.active{background:#007e6a;color:#fff;border-color:#007e6a}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:1px">
+        <span style="font-size:28px;font-weight:700;letter-spacing:2px;color:#007e6a;line-height:1">OBDC</span><span style="font-size:24px;color:#d4531e;font-weight:700;line-height:1">.</span>
+      </div>
+      <span class="logo-sub">Você. Satisfeito</span>
+    </div>
+    <div class="title-area">
+      <h1>Controle de Liberação de Horas Extras</h1>
+      <p id="datetime-display" style="font-size:11px;color:#888;margin-top:3px"></p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total solicitações</div><div class="stat-val" id="s-total">0</div></div>
+    <div class="stat"><div class="stat-label">Pendentes</div><div class="stat-val pend" id="s-pend">0</div></div>
+    <div class="stat"><div class="stat-label">Aprovadas</div><div class="stat-val aprov" id="s-aprov">0</div></div>
+    <div class="stat"><div class="stat-label">Negadas</div><div class="stat-val neg" id="s-neg">0</div></div>
+    <div class="stat"><div class="stat-label">Total horas aprovadas</div><div class="stat-val aprov" id="s-horas">0h</div></div>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="tab active" onclick="setFilter('todos',this)">Todos</button>
+    <button class="tab" onclick="setFilter('Pendente',this)">Pendentes</button>
+    <button class="tab" onclick="setFilter('Aprovado',this)">Aprovados</button>
+    <button class="tab" onclick="setFilter('Negado',this)">Negados</button>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search-input" placeholder="Buscar por líder, colaborador, motivo..." oninput="renderTable()">
+    <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i> Nova solicitação</button>
+    <div class="sync-badge"><span class="dot-offline" id="dot-status"></span> <span id="sync-label">Conectando...</span></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Líder</th>
+          <th>Colaborador</th>
+          <th>Motivo</th>
+          <th>Data</th>
+          <th>Horas</th>
+          <th>Status</th>
+          <th>Aprovado por</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty-msg" class="empty" style="display:none">
+      <i class="ti ti-clock-off" style="font-size:28px;display:block;margin-bottom:8px"></i>
+      Nenhuma solicitação encontrada.
+    </div>
+  </div>
+</div>
+
+<!-- Modal nova solicitação -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">Nova solicitação de horas extras</h2>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Líder solicitante</label>
+        <input type="text" id="f-lider" placeholder="Nome do líder...">
+      </div>
+      <div class="form-row">
+        <label>Colaborador</label>
+        <input type="text" id="f-colaborador" placeholder="Nome do colaborador...">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Motivo das horas extras</label>
+      <textarea id="f-motivo" rows="3" placeholder="Descreva o motivo..."></textarea>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Data das horas extras</label>
+        <input type="date" id="f-data">
+      </div>
+      <div class="form-row">
+        <label>Quantidade de horas</label>
+        <input type="number" id="f-horas" min="0.5" max="12" step="0.5" placeholder="Ex: 2">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveRecord()">Enviar solicitação</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal aprovação/negação -->
+<div class="modal-bg" id="modal-aprov">
+  <div class="modal" style="max-width:400px">
+    <h2 id="aprov-title">Aprovar horas extras</h2>
+    <p style="font-size:13px;color:#555;margin-bottom:1rem" id="aprov-desc"></p>
+    <div class="form-row">
+      <label>Quem está autorizando?</label>
+      <select id="f-aprovador">
+        <option value="">Selecione...</option>
+        <option value="Larissa">Larissa</option>
+        <option value="Geovana">Geovana</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAprov()">Cancelar</button>
+      <button class="btn-save" id="btn-confirmar-aprov" onclick="confirmarAcao()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const firebaseConfig = {
+  databaseURL: "https://horaextra-4a167-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const refHoras = db.ref('horasextras');
+
+let records = {};
+let filtroAtivo = 'todos';
+let acaoAtual = null;
+let idAtual = null;
+let editingId = null;
+
+db.ref('.info/connected').on('value', snap => {
+  const dot = document.getElementById('dot-status');
+  const label = document.getElementById('sync-label');
+  if(snap.val()){
+    dot.className='dot-live';
+    label.textContent='Sincronizado em tempo real';
+  } else {
+    dot.className='dot-offline';
+    label.textContent='Reconectando...';
+  }
+});
+
+refHoras.on('value', snap => {
+  records = snap.val() || {};
+  renderTable();
+});
+
+function setFilter(f, el){
+  filtroAtivo = f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+
+function formatDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function initials(n){ if(!n) return '?'; return n.trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function statusClass(s){ return s==='Aprovado'?'b-aprovado':s==='Negado'?'b-negado':'b-pendente'; }
+function avatarClass(nome){ return (nome||'').toLowerCase().startsWith('g')?'avatar avatar-g':'avatar'; }
+
+function renderTable(){
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const list = Object.entries(records).map(([id,r])=>({...r,id}))
+    .sort((a,b)=> (b.criadoEm||0)-(a.criadoEm||0));
+
+  const filtered = list.filter(r=>{
+    const matchFiltro = filtroAtivo==='todos' || r.status===filtroAtivo;
+    const matchQ = !q || (r.lider+r.colaborador+r.motivo).toLowerCase().includes(q);
+    return matchFiltro && matchQ;
+  });
+
+  const tbody = document.getElementById('tbody');
+  if(!filtered.length){
+    tbody.innerHTML='';
+    document.getElementById('empty-msg').style.display='block';
+  } else {
+    document.getElementById('empty-msg').style.display='none';
+    tbody.innerHTML = filtered.map((r,i)=>`
+      <tr>
+        <td style="color:#999;font-size:11px">${i+1}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="${avatarClass(r.lider)}">${initials(r.lider)}</div>
+            <span style="font-weight:500">${r.lider||'—'}</span>
+          </div>
+        </td>
+        <td>${r.colaborador||'—'}</td>
+        <td style="max-width:200px">${r.motivo||'—'}</td>
+        <td style="white-space:nowrap">${formatDate(r.data)}</td>
+        <td><strong>${r.horas||'—'}h</strong></td>
+        <td><span class="badge ${statusClass(r.status)}">${r.status||'Pendente'}</span></td>
+        <td>
+          ${r.aprovadoPor ? `
+            <div style="display:flex;align-items:center;gap:5px">
+              <div class="avatar" style="width:22px;height:22px;font-size:9px">${initials(r.aprovadoPor)}</div>
+              <span style="font-size:12px">${r.aprovadoPor}</span>
+            </div>
+            <div style="font-size:10px;color:#888;margin-top:2px">${r.aprovadoEm||''}</div>
+          ` : '<span style="color:#ccc;font-size:12px">—</span>'}
+        </td>
+        <td style="white-space:nowrap">
+          ${r.status==='Pendente' ? `
+            <button class="btn-icon btn-apr" onclick="abrirAprov('${r.id}','aprovar')" title="Aprovar"><i class="ti ti-check"></i> Aprovar</button>
+            <button class="btn-icon btn-neg" onclick="abrirAprov('${r.id}','negar')" title="Negar"><i class="ti ti-x"></i> Negar</button>
+          ` : `<span style="font-size:11px;color:#bbb">Finalizado</span>`}
+          <button class="btn-icon btn-del" onclick="deleteRecord('${r.id}')" title="Excluir"><i class="ti ti-trash"></i></button>
+        </td>
+      </tr>`).join('');
+  }
+
+  // stats
+  const all = Object.values(records);
+  document.getElementById('s-total').textContent = all.length;
+  document.getElementById('s-pend').textContent = all.filter(r=>r.status==='Pendente').length;
+  document.getElementById('s-aprov').textContent = all.filter(r=>r.status==='Aprovado').length;
+  document.getElementById('s-neg').textContent = all.filter(r=>r.status==='Negado').length;
+  const totalH = all.filter(r=>r.status==='Aprovado').reduce((s,r)=>s+parseFloat(r.horas||0),0);
+  document.getElementById('s-horas').textContent = totalH % 1 === 0 ? totalH+'h' : totalH.toFixed(1)+'h';
+}
+
+function openModal(id){
+  editingId = id||null;
+  document.getElementById('modal-title').textContent = 'Nova solicitação de horas extras';
+  ['f-lider','f-colaborador','f-motivo','f-data','f-horas'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+
+function saveRecord(){
+  const lider = document.getElementById('f-lider').value.trim();
+  const colaborador = document.getElementById('f-colaborador').value.trim();
+  const motivo = document.getElementById('f-motivo').value.trim();
+  const data = document.getElementById('f-data').value;
+  const horas = document.getElementById('f-horas').value;
+  if(!lider||!colaborador||!motivo||!data||!horas){ showToast('Preencha todos os campos!'); return; }
+  const rec = { lider, colaborador, motivo, data, horas: parseFloat(horas), status:'Pendente', criadoEm: Date.now(), aprovadoPor: null, aprovadoEm: null };
+  refHoras.push(rec);
+  showToast('Solicitação enviada!');
+  closeModal();
+}
+
+function abrirAprov(id, acao){
+  idAtual = id;
+  acaoAtual = acao;
+  const r = records[id];
+  document.getElementById('aprov-title').textContent = acao==='aprovar' ? '✅ Aprovar horas extras' : '❌ Negar horas extras';
+  document.getElementById('aprov-desc').textContent = `${r.colaborador} — ${r.horas}h em ${formatDate(r.data)} — Motivo: ${r.motivo}`;
+  document.getElementById('f-aprovador').value = '';
+  const btn = document.getElementById('btn-confirmar-aprov');
+  btn.style.background = acao==='aprovar'?'#007e6a':'#a32d2d';
+  btn.textContent = acao==='aprovar'?'Confirmar aprovação':'Confirmar negação';
+  document.getElementById('modal-aprov').classList.add('open');
+}
+
+function closeAprov(){ document.getElementById('modal-aprov').classList.remove('open'); }
+
+function confirmarAcao(){
+  const aprovador = document.getElementById('f-aprovador').value;
+  if(!aprovador){ showToast('Selecione quem está autorizando!'); return; }
+  const agora = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  refHoras.child(idAtual).update({
+    status: acaoAtual==='aprovar'?'Aprovado':'Negado',
+    aprovadoPor: aprovador,
+    aprovadoEm: agora
+  });
+  showToast(acaoAtual==='aprovar'?`Aprovado por ${aprovador}!`:`Negado por ${aprovador}.`);
+  closeAprov();
+}
+
+function deleteRecord(id){
+  if(!confirm('Excluir esta solicitação?')) return;
+  refHoras.child(id).remove();
+  showToast('Solicitação excluída.');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target===document.getElementById('modal')) closeModal(); });
+document.getElementById('modal-aprov').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-aprov')) closeAprov(); });
+
+function updateClock(){
+  const now = new Date();
+  document.getElementById('datetime-display').textContent =
+    now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+
+    ' — '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+updateClock();
+setInterval(updateClock,1000);
+</script>
+</body>
+</html>
