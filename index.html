@@ -329,15 +329,19 @@ function renderRanking(all){
   if(!aprovados.length){ section.classList.remove('visible'); return; }
 
   const mapa = {};
+  const nomeOriginal = {};
   aprovados.forEach(r=>{
-    const nome = r.colaborador||'Desconhecido';
-    mapa[nome] = (mapa[nome]||0) + parseFloat(r.horas||0);
+    const raw = r.colaborador||'Desconhecido';
+    const key = raw.trim().toLowerCase();
+    if(!nomeOriginal[key]) nomeOriginal[key] = raw.trim().charAt(0).toUpperCase() + raw.trim().slice(1).toLowerCase();
+    mapa[key] = (mapa[key]||0) + parseFloat(r.horas||0);
   });
 
   const lista = Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
   const max = lista[0][1];
 
-  document.getElementById('ranking-list').innerHTML = lista.map(([nome,h])=>{
+  document.getElementById('ranking-list').innerHTML = lista.map(([key,h])=>{
+    const nome = nomeOriginal[key];
     const label = h % 1 === 0 ? h+'h' : h.toFixed(1)+'h';
     const pct = Math.round((h/max)*100);
     return `
@@ -349,6 +353,7 @@ function renderRanking(all){
   }).join('');
 
   section.classList.add('visible');
+}
 
 function openModal(id){
   editingId = id||null;
