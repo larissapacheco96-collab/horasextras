@@ -73,6 +73,17 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .filter-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
 .tab{background:#fff;border:1px solid #ddd;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;color:#555;transition:all .15s}
 .tab.active{background:#007e6a;color:#fff;border-color:#007e6a}
+.ranking-section{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:none}
+.ranking-section.visible{display:block}
+.ranking-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
+.ranking-header h2{font-size:13px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:6px}
+.ranking-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.ranking-item{background:#f8fdf9;border:1px solid #d4eedf;border-radius:8px;padding:.65rem .85rem}
+.ranking-name{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ranking-horas{font-size:18px;font-weight:700;color:#0f6e56;line-height:1}
+.ranking-horas span{font-size:11px;font-weight:400;color:#666;margin-left:2px}
+.ranking-bar-bg{height:4px;background:#e1f5ee;border-radius:4px;margin-top:6px}
+.ranking-bar-fill{height:4px;background:#007e6a;border-radius:4px;transition:width .4s}
 </style>
 </head>
 <body>
@@ -96,6 +107,14 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
     <div class="stat"><div class="stat-label">Aprovadas</div><div class="stat-val aprov" id="s-aprov">0</div></div>
     <div class="stat"><div class="stat-label">Negadas</div><div class="stat-val neg" id="s-neg">0</div></div>
     <div class="stat"><div class="stat-label">Total horas aprovadas</div><div class="stat-val aprov" id="s-horas">0h</div></div>
+  </div>
+
+  <!-- Painel horas por colaborador -->
+  <div class="ranking-section" id="ranking-section">
+    <div class="ranking-header">
+      <h2><i class="ti ti-chart-bar" style="color:#007e6a"></i> Horas aprovadas por colaborador</h2>
+    </div>
+    <div class="ranking-list" id="ranking-list"></div>
   </div>
 
   <div class="filter-tabs">
@@ -293,7 +312,37 @@ function renderTable(){
   document.getElementById('s-neg').textContent = all.filter(r=>r.status==='Negado').length;
   const totalH = all.filter(r=>r.status==='Aprovado').reduce((s,r)=>s+parseFloat(r.horas||0),0);
   document.getElementById('s-horas').textContent = totalH % 1 === 0 ? totalH+'h' : totalH.toFixed(1)+'h';
+
+  // ranking por colaborador
+  renderRanking(all);
 }
+
+function renderRanking(all){
+  const aprovados = all.filter(r=>r.status==='Aprovado');
+  const section = document.getElementById('ranking-section');
+  if(!aprovados.length){ section.classList.remove('visible'); return; }
+
+  const mapa = {};
+  aprovados.forEach(r=>{
+    const nome = r.colaborador||'Desconhecido';
+    mapa[nome] = (mapa[nome]||0) + parseFloat(r.horas||0);
+  });
+
+  const lista = Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
+  const max = lista[0][1];
+
+  document.getElementById('ranking-list').innerHTML = lista.map(([nome,h])=>{
+    const label = h % 1 === 0 ? h+'h' : h.toFixed(1)+'h';
+    const pct = Math.round((h/max)*100);
+    return `
+      <div class="ranking-item">
+        <div class="ranking-name" title="${nome}">${nome}</div>
+        <div class="ranking-horas">${label}<span>aprovadas</span></div>
+        <div class="ranking-bar-bg"><div class="ranking-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
+
+  section.classList.add('visible');
 
 function openModal(id){
   editingId = id||null;
