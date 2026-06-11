@@ -75,8 +75,9 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .tab.active{background:#007e6a;color:#fff;border-color:#007e6a}
 .ranking-section{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:none}
 .ranking-section.visible{display:block}
-.ranking-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
+.ranking-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px}
 .ranking-header h2{font-size:13px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:6px}
+.ranking-filter select{font-size:12px;padding:5px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
 .ranking-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
 .ranking-item{background:#f8fdf9;border:1px solid #d4eedf;border-radius:8px;padding:.65rem .85rem}
 .ranking-name{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -113,6 +114,11 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
   <div class="ranking-section" id="ranking-section">
     <div class="ranking-header">
       <h2><i class="ti ti-chart-bar" style="color:#007e6a"></i> Horas aprovadas por colaborador</h2>
+      <div class="ranking-filter">
+        <select id="ranking-mes" onchange="renderRanking(Object.values(records))">
+          <option value="todos">Todos os meses</option>
+        </select>
+      </div>
     </div>
     <div class="ranking-list" id="ranking-list"></div>
   </div>
@@ -328,9 +334,36 @@ function renderRanking(all){
   const section = document.getElementById('ranking-section');
   if(!aprovados.length){ section.classList.remove('visible'); return; }
 
+  // Popular select de meses
+  const meses = [...new Set(aprovados.map(r=>(r.data||'').substring(0,7)).filter(m => {
+    if(!m) return false;
+    const ano = parseInt(m.substring(0,4));
+    return ano >= 2020;
+  }))].sort().reverse();
+  const sel = document.getElementById('ranking-mes');
+  const mesSel = sel.value;
+  sel.innerHTML = '<option value="todos">Todos os meses</option>' +
+    meses.map(m => {
+      const [y,mo] = m.split('-');
+      const label = new Date(y, mo-1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+      return `<option value="${m}" ${mesSel===m?'selected':''}>${label.charAt(0).toUpperCase()+label.slice(1)}</option>`;
+    }).join('');
+
+  // Filtrar por mês selecionado
+  const filtroMes = sel.value;
+  const filtrados = filtroMes==='todos'
+    ? aprovados.filter(r => parseInt((r.data||'').substring(0,4)) >= 2020)
+    : aprovados.filter(r=>(r.data||'').startsWith(filtroMes));
+
+  if(!filtrados.length){
+    document.getElementById('ranking-list').innerHTML = '<p style="font-size:12px;color:#888;padding:.5rem 0">Nenhuma hora aprovada neste mês.</p>';
+    section.classList.add('visible');
+    return;
+  }
+
   const mapa = {};
   const nomeOriginal = {};
-  aprovados.forEach(r=>{
+  filtrados.forEach(r=>{
     const raw = r.colaborador||'Desconhecido';
     const key = raw.trim().toLowerCase();
     if(!nomeOriginal[key]) nomeOriginal[key] = raw.trim().charAt(0).toUpperCase() + raw.trim().slice(1).toLowerCase();
