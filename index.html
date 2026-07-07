@@ -40,6 +40,8 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .avatar{width:28px;height:28px;border-radius:50%;background:#e6f1fb;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#185fa5;flex-shrink:0}
 .avatar-g{background:#eaf3de;color:#3b6d11}
 .btn-icon{background:none;border:none;cursor:pointer;font-size:15px;padding:3px 6px;border-radius:6px;font-weight:500}
+.btn-edit{color:#185fa5;border:1px solid #b8d4f0;background:#e6f1fb;margin-right:4px}
+.btn-edit:hover{background:#b8d4f0}
 .btn-apr{color:#0f6e56;border:1px solid #9fe1cb;background:#e1f5ee}
 .btn-apr:hover{background:#9fe1cb}
 .btn-neg{color:#a32d2d;border:1px solid #f7c1c1;background:#fcebeb;margin-left:4px}
@@ -160,7 +162,7 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
   </div>
 </div>
 
-<!-- Modal nova solicitação -->
+<!-- Modal nova solicitação / edição -->
 <div class="modal-bg" id="modal">
   <div class="modal">
     <h2 id="modal-title">Nova solicitação de horas extras</h2>
@@ -190,7 +192,7 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-save" onclick="saveRecord()">Enviar solicitação</button>
+      <button class="btn-save" id="btn-save-record" onclick="saveRecord()">Enviar solicitação</button>
     </div>
   </div>
 </div>
@@ -236,6 +238,18 @@ let filtroAtivo = 'todos';
 let acaoAtual = null;
 let idAtual = null;
 let editingId = null;
+
+// Padroniza digitação de nomes: remove espaços extras e ajusta capitalização
+// (mantém conectores como "de", "da", "do" em minúsculo, exceto na primeira palavra)
+function normalizeName(str){
+  if(!str) return '';
+  const conectores = ['de','da','do','das','dos','e'];
+  return str.trim().replace(/\s+/g,' ').toLowerCase().split(' ').map((w,i)=>{
+    if(!w) return w;
+    if(i>0 && conectores.includes(w)) return w;
+    return w.charAt(0).toUpperCase()+w.slice(1);
+  }).join(' ');
+}
 
 db.ref('.info/connected').on('value', snap => {
   const dot = document.getElementById('dot-status');
@@ -308,6 +322,7 @@ function renderTable(){
         </td>
         <td style="white-space:nowrap">
           ${r.status==='Pendente' ? `
+            <button class="btn-icon btn-edit" onclick="openModal('${r.id}')" title="Editar"><i class="ti ti-pencil"></i> Editar</button>
             <button class="btn-icon btn-apr" onclick="abrirAprov('${r.id}','aprovar')" title="Aprovar"><i class="ti ti-check"></i> Aprovar</button>
             <button class="btn-icon btn-neg" onclick="abrirAprov('${r.id}','negar')" title="Negar"><i class="ti ti-x"></i> Negar</button>
           ` : `<span style="font-size:11px;color:#bbb">Finalizado</span>`}
@@ -390,23 +405,35 @@ function renderRanking(all){
 
 function openModal(id){
   editingId = id||null;
-  document.getElementById('modal-title').textContent = 'Nova solicitação de horas extras';
-  ['f-lider','f-colaborador','f-motivo','f-data','f-horas'].forEach(i=>document.getElementById(i).value='');
+  const r = editingId ? records[editingId] : null;
+  document.getElementById('modal-title').textContent = editingId ? 'Editar solicitação de horas extras' : 'Nova solicitação de horas extras';
+  document.getElementById('btn-save-record').textContent = editingId ? 'Salvar alterações' : 'Enviar solicitação';
+  document.getElementById('f-lider').value = r ? r.lider : '';
+  document.getElementById('f-colaborador').value = r ? r.colaborador : '';
+  document.getElementById('f-motivo').value = r ? r.motivo : '';
+  document.getElementById('f-data').value = r ? r.data : '';
+  document.getElementById('f-horas').value = r ? r.horas : '';
   document.getElementById('modal').classList.add('open');
 }
 
-function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); editingId = null; }
 
 function saveRecord(){
-  const lider = document.getElementById('f-lider').value.trim();
-  const colaborador = document.getElementById('f-colaborador').value.trim();
+  const lider = normalizeName(document.getElementById('f-lider').value);
+  const colaborador = normalizeName(document.getElementById('f-colaborador').value);
   const motivo = document.getElementById('f-motivo').value.trim();
   const data = document.getElementById('f-data').value;
   const horas = document.getElementById('f-horas').value;
   if(!lider||!colaborador||!motivo||!data||!horas){ showToast('Preencha todos os campos!'); return; }
-  const rec = { lider, colaborador, motivo, data, horas: parseFloat(horas), status:'Pendente', criadoEm: Date.now(), aprovadoPor: null, aprovadoEm: null };
-  refHoras.push(rec);
-  showToast('Solicitação enviada!');
+
+  if(editingId){
+    refHoras.child(editingId).update({ lider, colaborador, motivo, data, horas: parseFloat(horas) });
+    showToast('Solicitação atualizada!');
+  } else {
+    const rec = { lider, colaborador, motivo, data, horas: parseFloat(horas), status:'Pendente', criadoEm: Date.now(), aprovadoPor: null, aprovadoEm: null };
+    refHoras.push(rec);
+    showToast('Solicitação enviada!');
+  }
   closeModal();
 }
 
