@@ -221,15 +221,21 @@ table.small{min-width:720px}
       <div class="stat"><div class="stat-label">Saldo do Ponto (realizado)</div><div class="stat-val comp" id="c-saldoini">0h00</div></div>
       <div class="stat"><div class="stat-label">Total compensado</div><div class="stat-val pend" id="c-compensado">0h00</div></div>
       <div class="stat"><div class="stat-label">Saldo disponível</div><div class="stat-val aprov" id="c-saldo">0h00</div></div>
-      <div class="stat"><div class="stat-label">Aprovado (referência)</div><div class="stat-val" style="color:#888" id="c-aprovadas">0h00</div></div>
+      <div class="stat"><div class="stat-label" id="c-aprov-label">Aprovado (referência)</div><div class="stat-val" style="color:#888" id="c-aprovadas">0h00</div></div>
       <div class="stat"><div class="stat-label">Colaboradores</div><div class="stat-val" id="c-colabs">0</div></div>
     </div>
 
     <div class="saldo-section">
-      <h2><i class="ti ti-wallet" style="color:#007e6a"></i> Saldo de horas por colaborador</h2>
+      <div class="ranking-header">
+        <h2 style="margin:0"><i class="ti ti-wallet" style="color:#007e6a"></i> Saldo de horas por colaborador</h2>
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:#666">Referência de aprovadas:</label>
+          <select id="comp-mes" onchange="setMesRef(this.value)" style="font-size:12px;padding:5px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer"></select>
+        </div>
+      </div>
       <div class="saldo-list" id="saldo-list"></div>
-      <p class="hint"><b>Saldo disponível = saldo do Ponto − horas já compensadas.</b> O saldo do Ponto é o que foi de fato trabalhado.
-      As horas aprovadas aparecem apenas como referência, para comparar o que foi liberado com o que foi realizado — elas não entram na conta.</p>
+      <p class="hint"><b>Saldo disponível = saldo do Ponto − horas já compensadas.</b> O saldo do Ponto é o que foi de fato trabalhado e é acumulado.
+      A linha "Aprovado" mostra o que foi liberado no mês selecionado acima, só para comparação — não entra na conta do saldo.</p>
     </div>
 
     <div class="toolbar">
@@ -423,8 +429,8 @@ table.small{min-width:720px}
   <div class="modal wide">
     <h2><i class="ti ti-file-import" style="color:#007e6a"></i> Importar saldos do Ponto</h2>
     <div class="info-box">
-      Uma linha por colaborador, no formato <b>NOME ; HH:MM</b>. Já preenchido com o fechamento de <b>julho/2026</b>.
-      Os nomes são convertidos automaticamente para o cadastro padrão.
+      Uma linha por colaborador, no formato <b>NOME ; HH:MM</b>. Já preenchido com o fechamento de <b>julho/2026</b>,
+      positivos e negativos. Os nomes são convertidos automaticamente para o cadastro padrão.
     </div>
     <div class="form-grid">
       <div class="form-row">
@@ -437,8 +443,8 @@ table.small{min-width:720px}
       </div>
     </div>
     <div class="check-row">
-      <input type="checkbox" id="im-so-positivos" checked>
-      <label for="im-so-positivos" style="margin:0">Importar somente saldos positivos (ignorar negativos e zerados)</label>
+      <input type="checkbox" id="im-so-positivos">
+      <label for="im-so-positivos" style="margin:0">Importar somente saldos positivos (desmarcado: traz também quem está negativo)</label>
     </div>
     <div class="check-row">
       <input type="checkbox" id="im-substituir" checked>
@@ -557,10 +563,13 @@ const APELIDOS = {
   "lara":"Lara Rayne Rodrigues de Souza",
   "lara rayne":"Lara Rayne Rodrigues de Souza",
   "laha rayne rodrigues de souza":"Lara Rayne Rodrigues de Souza",
-  "larissa":"Larissa Pacheco Silva",
-  "larissa pacheco":"Larissa Pacheco Silva",
+  // "Larissa" sozinho = Larissa Bernardes (colaboradora).
+  // Larissa Pacheco é a aprovadora e nunca aparece como solicitante.
+  "larissa":"Larissa Bernardes de Oliveira",
   "larissa bernandes":"Larissa Bernardes de Oliveira",
   "larissa bernardes":"Larissa Bernardes de Oliveira",
+  "larissa pacheco":"Larissa Pacheco Silva",
+  "larissa pacheco silva":"Larissa Pacheco Silva",
   "lauanny":"Lauanny Kelly Carolina da Silva",
   "lauryana":"Lauryana Abadia Silva Bastos",
   "lauryanna":"Lauryana Abadia Silva Bastos",
@@ -613,6 +622,7 @@ let filtroAtivo = 'todos';
 let acaoAtual = null;
 let idAtual = null;
 let pendentePadr = null;
+let mesRef = null;   // mês usado como referência das horas aprovadas na aba Compensação
 
 db.ref('.info/connected').on('value', snap => {
   const dot = document.getElementById('dot-status');
@@ -824,8 +834,8 @@ function renderRanking(noMes, mesSel){
     mapa[nome] = (mapa[nome]||0) + parseFloat(r.horas||0);
   });
 
-  const lista = Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
-  const max = lista[0][1] || 1;
+  const max = Math.max(...Object.values(mapa), 1);
+  const lista = Object.entries(mapa).sort((a,b)=> a[0].localeCompare(b[0],'pt-BR'));
 
   document.getElementById('ranking-list').innerHTML = lista.map(([nome,h])=>{
     const comp = mapaComp[nome]||0;
@@ -843,7 +853,9 @@ function renderRanking(noMes, mesSel){
 }
 
 /* ================= COMPENSAÇÃO ================= */
-function calcularSaldos(){
+// mesRef: 'todos' ou 'AAAA-MM' — afeta APENAS o número de referência de horas aprovadas
+function calcularSaldos(mesRef){
+  const ref = mesRef || 'todos';
   const mapa = {};
   const get = (raw)=>{
     const nome = canonico(raw);
@@ -852,7 +864,12 @@ function calcularSaldos(){
     return mapa[nome];
   };
   Object.values(saldos).forEach(s=>{ const o=s&&get(s.colaborador); if(o) o.ponto += parseFloat(s.horas||0); });
-  Object.values(records).forEach(r=>{ if(r&&r.status==='Aprovado'){ const o=get(r.colaborador); if(o) o.aprovadas += parseFloat(r.horas||0); } });
+  Object.values(records).forEach(r=>{
+    if(!r || r.status!=='Aprovado') return;
+    const o = get(r.colaborador);           // a pessoa continua na lista mesmo fora do mês
+    if(!o) return;
+    if(ref==='todos' || (r.data||'').startsWith(ref)) o.aprovadas += parseFloat(r.horas||0);
+  });
   Object.values(comps).forEach(c=>{ const o=c&&get(c.colaborador); if(o) o.compensado += parseFloat(c.horas||0); });
   // Saldo disponível vem do que foi DE FATO trabalhado (Ponto), menos o que já foi compensado.
   // As horas aprovadas são apenas referência e NÃO entram no saldo.
@@ -865,13 +882,32 @@ function saldoDe(nome){
   return m[c] ? m[c].saldo : 0;
 }
 
+function mesesDisponiveis(){
+  const set = new Set();
+  Object.values(records).forEach(r=>{ const m=(r&&r.data||'').substring(0,7); if(m && parseInt(m.substring(0,4))>=2020) set.add(m); });
+  Object.values(saldos).forEach(s=>{ if(s&&s.mes) set.add(s.mes); });
+  return [...set].sort().reverse();
+}
+function setMesRef(v){ mesRef = v; renderComp(); }
+
 function renderComp(){
-  const mapa = calcularSaldos();
+  // --- seletor do mês de referência ---
+  const meses = mesesDisponiveis();
+  if(mesRef===null) mesRef = meses[0] || 'todos';
+  if(mesRef!=='todos' && !meses.includes(mesRef)) mesRef = meses[0] || 'todos';
+  const selMes = document.getElementById('comp-mes');
+  selMes.innerHTML = meses.map(m=>`<option value="${m}">${formatMes(m)}</option>`).join('') +
+                     '<option value="todos">Todos os meses</option>';
+  selMes.value = mesRef;
+  const refTxt = mesRef==='todos' ? 'todos os meses' : formatMes(mesRef);
+  document.getElementById('c-aprov-label').textContent = 'Aprovado — '+refTxt;
+
+  const mapa = calcularSaldos(mesRef);
   const q = chave(document.getElementById('comp-search').value);
 
   const lista = Object.values(mapa)
     .filter(m=> !q || chave(m.nome).includes(q))
-    .sort((a,b)=> b.saldo-a.saldo);
+    .sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'));
 
   const el = document.getElementById('saldo-list');
   if(!lista.length){
@@ -889,7 +925,7 @@ function renderComp(){
           <div>Compensadas</div><div style="text-align:right"><b>${m.compensado>0?'−':''}${fmtHM(m.compensado)}</b></div>
         </div>
         <div class="saldo-ref">
-          <span>Aprovado (referência)</span><b>${fmtHM(m.aprovadas)}</b>
+          <span>Aprovado — ${refTxt}</span><b>${fmtHM(m.aprovadas)}</b>
         </div>
       </div>`;
     }).join('');
@@ -1070,8 +1106,15 @@ function runImport(){
   const validos = itens.filter(i => soPos ? i.horas > 0.001 : Math.abs(i.horas) > 0.001);
   if(!validos.length){ showToast('Nenhuma linha válida para importar.'); return; }
 
+  const pos = validos.filter(i=>i.horas>0), negs = validos.filter(i=>i.horas<0);
   const totalTxt = fmtHM(validos.reduce((s,i)=>s+i.horas,0));
-  if(!confirm(`Importar ${validos.length} lançamento(s) para ${formatMes(mes)}?\nTotal: ${totalTxt}${erros.length?`\n\n${erros.length} linha(s) ignorada(s) por formato inválido.`:''}`)) return;
+  if(!confirm(
+    `Importar ${validos.length} lançamento(s) para ${formatMes(mes)}?\n\n` +
+    `${pos.length} positivo(s): +${fmtHM(pos.reduce((s,i)=>s+i.horas,0))}\n` +
+    `${negs.length} negativo(s): ${fmtHM(negs.reduce((s,i)=>s+i.horas,0))}\n` +
+    `Saldo líquido: ${totalTxt}` +
+    (erros.length?`\n\n${erros.length} linha(s) ignorada(s) por formato inválido.`:'')
+  )) return;
 
   const updates = {};
   if(substituir){
