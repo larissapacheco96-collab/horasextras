@@ -48,6 +48,8 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .btn-apr:hover{background:#9fe1cb}
 .btn-neg{color:#a32d2d;border:1px solid #f7c1c1;background:#fcebeb;margin-left:4px}
 .btn-neg:hover{background:#f7c1c1}
+.btn-edit{color:#185fa5;border:1px solid #c5ddf3;background:#e6f1fb}
+.btn-edit:hover{background:#c5ddf3}
 .btn-del{color:#888;border:none;background:none;margin-left:4px}
 .btn-del:hover{color:#a32d2d;background:#fcebeb}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
@@ -353,7 +355,7 @@ table.small{min-width:720px}
 <!-- Modal compensação -->
 <div class="modal-bg" id="modal-comp">
   <div class="modal">
-    <h2><i class="ti ti-clock-minus" style="color:#007e6a"></i> Lançar compensação de horas</h2>
+    <h2 id="comp-title"><i class="ti ti-clock-minus" style="color:#007e6a"></i> Lançar compensação de horas</h2>
     <div class="warn-box" id="comp-warn"></div>
     <div class="form-row">
       <label>Colaborador</label>
@@ -388,7 +390,7 @@ table.small{min-width:720px}
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeComp()">Cancelar</button>
-      <button class="btn-save" onclick="saveComp()">Lançar compensação</button>
+      <button class="btn-save" id="btn-comp-save" onclick="saveComp()">Lançar compensação</button>
     </div>
   </div>
 </div>
@@ -623,6 +625,7 @@ let acaoAtual = null;
 let idAtual = null;
 let pendentePadr = null;
 let mesRef = null;   // mês usado como referência das horas aprovadas na aba Compensação
+let editCompId = null;   // id da compensação em edição (null = novo lançamento)
 
 db.ref('.info/connected').on('value', snap => {
   const dot = document.getElementById('dot-status');
@@ -679,15 +682,21 @@ function todosOsNomes(){
 }
 
 /* ===== Selects de nome ===== */
-function preencheSelect(prefixo){
+function preencheSelect(prefixo, valor){
   const sel = document.getElementById(prefixo+'-sel');
+  const inp = document.getElementById(prefixo+'-outro');
   const {base, fora} = todosOsNomes();
   sel.innerHTML = '<option value="">Selecione...</option>' +
     base.map(n=>`<option value="${n}">${n}</option>`).join('') +
     (fora.length ? '<optgroup label="Fora do cadastro">'+fora.map(n=>`<option value="${n}">${n}</option>`).join('')+'</optgroup>' : '') +
     '<option value="__outro__">➕ Outro (digitar)...</option>';
-  document.getElementById(prefixo+'-outro').style.display='none';
-  document.getElementById(prefixo+'-outro').value='';
+  inp.style.display='none'; inp.value='';
+  sel.value = '';
+  if(valor){
+    const alvo = canonico(valor);
+    if([...sel.options].some(o=>o.value===alvo)) sel.value = alvo;
+    else { sel.value='__outro__'; inp.style.display='block'; inp.value=alvo; }
+  }
 }
 function toggleOutro(prefixo){
   const sel = document.getElementById(prefixo+'-sel');
@@ -954,8 +963,11 @@ function renderComp(){
         <td style="white-space:nowrap">${c.horaIni||'—'} às ${c.horaFim||'—'}</td>
         <td><strong style="color:#854f0b">−${fmtHM(c.horas)}</strong></td>
         <td style="max-width:220px">${c.obs||'—'}</td>
-        <td style="font-size:11px;color:#888;white-space:nowrap">${c.criadoEmTxt||'—'}</td>
-        <td><button class="btn-icon btn-del" onclick="deleteComp('${c.id}')" title="Excluir"><i class="ti ti-trash"></i></button></td>
+        <td style="font-size:11px;color:#888;white-space:nowrap">${c.criadoEmTxt||'—'}${c.editadoEmTxt?`<div style="color:#b0862c">editado ${c.editadoEmTxt}</div>`:''}</td>
+        <td style="white-space:nowrap">
+          <button class="btn-icon btn-edit" onclick="openComp('${c.id}')" title="Editar"><i class="ti ti-edit"></i> Editar</button>
+          <button class="btn-icon btn-del" onclick="deleteComp('${c.id}')" title="Excluir"><i class="ti ti-trash"></i></button>
+        </td>
       </tr>`).join('');
   }
 
@@ -1003,7 +1015,10 @@ function atualizaSaldoModal(){
   const info = document.getElementById('c-saldo-info');
   const warn = document.getElementById('comp-warn');
   if(!nome){ info.textContent=''; warn.classList.remove('show'); return; }
-  const s = saldoDe(nome);
+  let s = saldoDe(nome);
+  // ao editar, devolve ao saldo as horas do próprio lançamento antes de comparar
+  const orig = editCompId ? comps[editCompId] : null;
+  if(orig && canonico(orig.colaborador)===canonico(nome)) s += parseFloat(orig.horas||0);
   const pedido = parseFloat(document.getElementById('c-horas').value||0);
   info.innerHTML = `Saldo disponível hoje: <b style="color:${s>0?'#0f6e56':'#a32d2d'}">${fmtHM(s)}</b>` +
     (pedido>0 ? ` &nbsp;→&nbsp; após esta compensação: <b style="color:${(s-pedido)>=0?'#0f6e56':'#a32d2d'}">${fmtHM(s-pedido)}</b>` : '');
@@ -1013,14 +1028,26 @@ function atualizaSaldoModal(){
   } else warn.classList.remove('show');
 }
 
-function openComp(){
-  preencheSelect('c-colaborador');
-  ['c-data','c-ini','c-fim','c-horas','c-horas-txt','c-obs'].forEach(i=>document.getElementById(i).value='');
+function openComp(id){
+  editCompId = id || null;
+  const r = id ? comps[id] : null;
+  preencheSelect('c-colaborador', r ? r.colaborador : '');
+  document.getElementById('c-data').value = r ? (r.data||'') : '';
+  document.getElementById('c-ini').value  = r ? (r.horaIni||'') : '';
+  document.getElementById('c-fim').value  = r ? (r.horaFim||'') : '';
+  document.getElementById('c-obs').value  = r ? (r.obs||'') : '';
+  document.getElementById('c-horas').value = '';
+  document.getElementById('c-horas-txt').value = '';
   document.getElementById('c-saldo-info').textContent='';
   document.getElementById('comp-warn').classList.remove('show');
+  document.getElementById('comp-title').innerHTML = r
+    ? '<i class="ti ti-edit" style="color:#007e6a"></i> Editar compensação de horas'
+    : '<i class="ti ti-clock-minus" style="color:#007e6a"></i> Lançar compensação de horas';
+  document.getElementById('btn-comp-save').textContent = r ? 'Salvar alterações' : 'Lançar compensação';
+  if(r) calcHoras();
   document.getElementById('modal-comp').classList.add('open');
 }
-function closeComp(){ document.getElementById('modal-comp').classList.remove('open'); }
+function closeComp(){ document.getElementById('modal-comp').classList.remove('open'); editCompId=null; }
 
 function saveComp(){
   const colaborador = valorNome('c-colaborador');
@@ -1031,12 +1058,15 @@ function saveComp(){
   const obs = document.getElementById('c-obs').value.trim();
   if(!colaborador || !data || !horaIni || !horaFim){ showToast('Preencha colaborador, dia e horários!'); return; }
   if(!(horas>0)){ showToast('O horário informado resulta em 0h.'); return; }
-  refComp.push({
-    colaborador, data, horaIni, horaFim, horas, obs,
-    criadoEm: Date.now(),
-    criadoEmTxt: new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
-  });
-  showToast(`Compensação de ${fmtHM(horas)} lançada para ${nomeCurto(colaborador)}.`);
+  const agora = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  if(editCompId){
+    refComp.child(editCompId).update({ colaborador, data, horaIni, horaFim, horas, obs, editadoEmTxt: agora });
+    showToast(`Compensação de ${nomeCurto(colaborador)} atualizada para ${fmtHM(horas)}.`);
+  } else {
+    refComp.push({ colaborador, data, horaIni, horaFim, horas, obs, criadoEm: Date.now(), criadoEmTxt: agora });
+    showToast(`Compensação de ${fmtHM(horas)} lançada para ${nomeCurto(colaborador)}.`);
+  }
   closeComp();
 }
 function deleteComp(id){
