@@ -121,6 +121,14 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .saldo-break b{font-weight:600;color:#1a1a1a}
 .saldo-ref{margin-top:6px;padding-top:6px;border-top:1px dashed #e2e2dc;display:flex;justify-content:space-between;gap:6px;font-size:10.5px;color:#999}
 .saldo-ref b{font-weight:600;color:#888}
+.saldo-meta{font-size:10.5px;color:#7a7a72;margin:-3px 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.time-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.9rem}
+.chip{border:1px solid #ddd;background:#fff;border-radius:20px;padding:5px 12px;font-size:11.5px;cursor:pointer;color:#555;display:flex;align-items:center;gap:7px;font-family:Arial,sans-serif}
+.chip:hover{border-color:#9fe1cb;background:#f4fbf8}
+.chip.active{background:#007e6a;color:#fff;border-color:#007e6a}
+.chip b{font-weight:700}
+.chip .cneg{color:#a32d2d}
+.chip.active .cneg{color:#ffd9d9}
 .hint{font-size:11px;color:#888;margin-top:6px;line-height:1.5}
 .warn-box{background:#faeeda;border:1px solid #f0d9ae;color:#854f0b;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:1rem;display:none}
 .warn-box.show{display:block}
@@ -159,6 +167,8 @@ table.small{min-width:720px}
       <select id="mes-filtro" onchange="renderTable()">
         <option value="todos">Todos os meses</option>
       </select>
+      <label style="font-size:12px;color:#555;font-weight:500;margin-left:8px">Time:</label>
+      <select id="time-filtro" onchange="renderTable()"></select>
       <span id="mes-label" style="font-size:11px;color:#888"></span>
     </div>
 
@@ -230,11 +240,14 @@ table.small{min-width:720px}
     <div class="saldo-section">
       <div class="ranking-header">
         <h2 style="margin:0"><i class="ti ti-wallet" style="color:#007e6a"></i> Saldo de horas por colaborador</h2>
-        <div style="display:flex;align-items:center;gap:6px">
-          <label style="font-size:11px;color:#666">Referência de aprovadas:</label>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <label style="font-size:11px;color:#666">Time:</label>
+          <select id="comp-time" onchange="renderComp()" style="font-size:12px;padding:5px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer"></select>
+          <label style="font-size:11px;color:#666;margin-left:6px">Referência de aprovadas:</label>
           <select id="comp-mes" onchange="setMesRef(this.value)" style="font-size:12px;padding:5px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer"></select>
         </div>
       </div>
+      <div class="time-chips" id="time-chips"></div>
       <div class="saldo-list" id="saldo-list"></div>
       <p class="hint"><b>Saldo disponível = saldo do Ponto − horas já compensadas.</b> O saldo do Ponto é o que foi de fato trabalhado e é acumulado.
       A linha "Aprovado" mostra o que foi liberado no mês selecionado acima, só para comparação — não entra na conta do saldo.</p>
@@ -587,6 +600,47 @@ const APELIDOS = {
   "wellington":"Wellington Rodrigues"
 };
 
+/* ===================================================================
+   TIMES — nome oficial -> { time, cargo }
+   Quem não estiver aqui aparece como "Sem time".
+   =================================================================== */
+const TIMES = ["Time Guilherme","Time Fernanda","Integração","Reforma Tributária","Time Lauanny","Time Gabriela","Time Gabryel","Sem time"];
+
+const EQUIPES = {
+  // Time Guilherme
+  "Guilherme Ribeiro":                       {time:"Time Guilherme", cargo:"Líder"},
+  "Lauryana Abadia Silva Bastos":            {time:"Time Guilherme", cargo:"Auxiliar"},
+  "Maria Rosileide Santos da Silva Arruda":  {time:"Time Guilherme", cargo:"Assistente"},
+  "Maria Luiza Mendes Pereira":              {time:"Time Guilherme", cargo:"Auxiliar"},
+  "João Vitor Fini":                         {time:"Time Guilherme", cargo:"Assistente"},
+  // Time Fernanda
+  "Fernanda Guardieiro de Almeida":          {time:"Time Fernanda", cargo:"Líder"},
+  "Gabriella Amanda de Souza Cardoso":       {time:"Time Fernanda", cargo:"Assistente"},
+  "Kelle Garcia Assunção":                   {time:"Time Fernanda", cargo:"Assistente"},
+  "Lara Rayne Rodrigues de Souza":           {time:"Time Fernanda", cargo:"Auxiliar"},
+  // Integração
+  "Jéssica Driely Pereira Santos da Silva":  {time:"Integração", cargo:"Analista Pleno"},
+  // Reforma Tributária
+  "Ana Flavia Souza Brotas":                 {time:"Reforma Tributária", cargo:""},
+  // Time Lauanny
+  "Lauanny Kelly Carolina da Silva":         {time:"Time Lauanny", cargo:"Líder"},
+  "Larissa Bernardes de Oliveira":           {time:"Time Lauanny", cargo:"Assistente"},
+  "Felipe Andrade Neves":                    {time:"Time Lauanny", cargo:"Assistente"},
+  "Rafael Duarte Couto Pistori":             {time:"Time Lauanny", cargo:"Auxiliar"},
+  "Thalita Ramos Silva":                     {time:"Time Lauanny", cargo:"Analista Júnior"},
+  // Time Gabriela
+  "Gabriela Machado e Oliveira":             {time:"Time Gabriela", cargo:"Líder"},
+  "Bianca Menezes Gonçalves Silva":          {time:"Time Gabriela", cargo:"Assistente"},
+  "Wellington Rodrigues":                    {time:"Time Gabriela", cargo:"Analista"},
+  // Time Gabryel
+  "Gabryel Pereira Tavares":                 {time:"Time Gabryel", cargo:"Líder"},
+  "Luciana da Costa Santana":                {time:"Time Gabryel", cargo:"Analista Júnior"},
+  "Ana Laura Tavares de Oliveira":           {time:"Time Gabryel", cargo:"Assistente"},
+  "Gaspar dos Reis Cardoso Junior":          {time:"Time Gabryel", cargo:"Auxiliar"},
+  "Estela Moreno de Paula":                  {time:"Time Gabryel", cargo:"Estagiária"},
+  "Douglas Barbosa da Silva":                {time:"Time Gabryel", cargo:"Assistente"}
+};
+
 // Saldos do Ponto — fechamento de julho/2026
 const SALDOS_JULHO = `ANA FLAVIA SOUZA BROTAS ; 01:11
 ANA LAURA TAVARES DE OLIVEIRA ; -01:01
@@ -660,6 +714,12 @@ function canonico(nome){
   const pref = COLABORADORES.filter(c=> chave(c).startsWith(k+' '));
   if(pref.length===1) return pref[0];
   return nomeBonito(nome);
+}
+function timeDe(nome){ const e = EQUIPES[canonico(nome)]; return e ? e.time : 'Sem time'; }
+function cargoDe(nome){ const e = EQUIPES[canonico(nome)]; return e ? e.cargo : ''; }
+function opcoesTime(atual){
+  return '<option value="todos">Todos os times</option>' +
+    TIMES.map(t=>`<option value="${t}" ${atual===t?'selected':''}>${t}</option>`).join('');
 }
 // Nome curto para as tabelas (primeiro + último sobrenome)
 function nomeCurto(n){
@@ -765,9 +825,21 @@ function renderTable(){
     meses.map(m=>`<option value="${m}" ${mesAtual===m?'selected':''}>${formatMes(m)}</option>`).join('');
   if(mesAtual!=='todos' && !meses.includes(mesAtual)) selMes.value='todos';
   const mesSel = selMes.value;
-  document.getElementById('mes-label').textContent = mesSel==='todos' ? 'todos os lançamentos' : 'lançamentos de '+formatMes(mesSel);
 
-  const noMes = all.filter(r=> mesSel==='todos' || (r.data||'').startsWith(mesSel));
+  const selTime = document.getElementById('time-filtro');
+  const timeAtual = selTime.value || 'todos';
+  selTime.innerHTML = opcoesTime(timeAtual);
+  selTime.value = timeAtual;
+  const timeSel = selTime.value;
+
+  document.getElementById('mes-label').textContent =
+    (mesSel==='todos' ? 'todos os lançamentos' : 'lançamentos de '+formatMes(mesSel)) +
+    (timeSel==='todos' ? '' : ' — '+timeSel);
+
+  const noMes = all.filter(r=>
+    (mesSel==='todos' || (r.data||'').startsWith(mesSel)) &&
+    (timeSel==='todos' || timeDe(r.colaborador)===timeSel)
+  );
 
   document.getElementById('s-total').textContent = noMes.length;
   document.getElementById('s-pend').textContent  = noMes.filter(r=>r.status==='Pendente').length;
@@ -898,6 +970,7 @@ function mesesDisponiveis(){
   return [...set].sort().reverse();
 }
 function setMesRef(v){ mesRef = v; renderComp(); }
+function setTimeComp(t){ document.getElementById('comp-time').value = t; renderComp(); }
 
 function renderComp(){
   // --- seletor do mês de referência ---
@@ -914,8 +987,30 @@ function renderComp(){
   const mapa = calcularSaldos(mesRef);
   const q = chave(document.getElementById('comp-search').value);
 
+  // --- filtro de time + resumo por time ---
+  const selTime = document.getElementById('comp-time');
+  const timeSel = selTime.value || 'todos';
+  selTime.innerHTML = opcoesTime(timeSel);
+  selTime.value = timeSel;
+
+  const porTime = {};
+  Object.values(mapa).forEach(m=>{
+    const t = timeDe(m.nome);
+    if(!porTime[t]) porTime[t] = {saldo:0, n:0};
+    porTime[t].saldo += m.saldo; porTime[t].n++;
+  });
+  const ordemTimes = TIMES.filter(t=>porTime[t]);
+  document.getElementById('time-chips').innerHTML =
+    `<button class="chip ${timeSel==='todos'?'active':''}" onclick="setTimeComp('todos')">Todos <b>${fmtHM(Object.values(porTime).reduce((s,t)=>s+t.saldo,0))}</b></button>` +
+    ordemTimes.map(t=>{
+      const v = porTime[t].saldo;
+      return `<button class="chip ${timeSel===t?'active':''}" onclick="setTimeComp('${t}')">${t} <b class="${v<0?'cneg':''}">${fmtHM(v)}</b></button>`;
+    }).join('');
+
+  const noTime = n => timeSel==='todos' || timeDe(n)===timeSel;
+
   const lista = Object.values(mapa)
-    .filter(m=> !q || chave(m.nome).includes(q))
+    .filter(m=> noTime(m.nome) && (!q || chave(m.nome).includes(q)))
     .sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'));
 
   const el = document.getElementById('saldo-list');
@@ -928,6 +1023,7 @@ function renderComp(){
       return `
       <div class="saldo-card ${cls}">
         <div class="saldo-nome" title="${m.nome}">${m.nome}</div>
+        <div class="saldo-meta">${timeDe(m.nome)}${cargoDe(m.nome)?' · '+cargoDe(m.nome):''}</div>
         <div class="saldo-val ${vcls}">${fmtHM(m.saldo)}<span>disponível</span></div>
         <div class="saldo-break">
           <div>Saldo do Ponto</div><div style="text-align:right"><b>${fmtHM(m.ponto)}</b></div>
@@ -940,15 +1036,16 @@ function renderComp(){
     }).join('');
   }
 
-  const tot = Object.values(mapa).reduce((a,m)=>({i:a.i+m.ponto,ap:a.ap+m.aprovadas,c:a.c+m.compensado,s:a.s+m.saldo}),{i:0,ap:0,c:0,s:0});
+  const tot = Object.values(mapa).filter(m=>noTime(m.nome))
+    .reduce((a,m)=>({i:a.i+m.ponto,ap:a.ap+m.aprovadas,c:a.c+m.compensado,s:a.s+m.saldo}),{i:0,ap:0,c:0,s:0});
   document.getElementById('c-saldoini').textContent   = fmtHM(tot.i);
   document.getElementById('c-aprovadas').textContent  = fmtHM(tot.ap);
   document.getElementById('c-compensado').textContent = fmtHM(tot.c);
   document.getElementById('c-saldo').textContent      = fmtHM(tot.s);
-  document.getElementById('c-colabs').textContent     = Object.keys(mapa).length;
+  document.getElementById('c-colabs').textContent     = Object.values(mapa).filter(m=>noTime(m.nome)).length;
 
   const cl = Object.entries(comps).map(([id,c])=>({...c,id}))
-    .filter(c=> !q || chave(canonico(c.colaborador)+' '+(c.obs||'')).includes(q))
+    .filter(c=> noTime(c.colaborador) && (!q || chave(canonico(c.colaborador)+' '+(c.obs||'')).includes(q)))
     // colaborador em ordem alfabética; dentro de cada um, por data (mais antiga primeiro)
     .sort((a,b)=> canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR')
                || (a.data||'').localeCompare(b.data||'')
@@ -975,7 +1072,7 @@ function renderComp(){
   }
 
   const sl = Object.entries(saldos).map(([id,s])=>({...s,id}))
-    .filter(s=> !q || chave(canonico(s.colaborador)+' '+(s.obs||'')).includes(q))
+    .filter(s=> noTime(s.colaborador) && (!q || chave(canonico(s.colaborador)+' '+(s.obs||'')).includes(q)))
     .sort((a,b)=> (b.mes||'').localeCompare(a.mes||'') || canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR'));
   const stb = document.getElementById('saldo-tbody');
   if(!sl.length){
