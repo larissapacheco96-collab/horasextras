@@ -61,10 +61,10 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .form-row textarea{resize:vertical;min-height:64px}
 .form-row textarea.mono{font-family:Consolas,Menlo,monospace;font-size:12px;line-height:1.6;min-height:240px}
 .form-row input[readonly]{background:#f5f5f0;color:#555}
+.form-row .outro{margin-top:6px}
 .check-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:1rem}
 .check-row input{width:auto}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #eee}
 .btn-cancel{background:none;border:1px solid #ccc;color:#333;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer}
 .btn-cancel:hover{background:#f5f5f0}
@@ -75,7 +75,7 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .dot-live{width:7px;height:7px;border-radius:50%;background:#1d9e75;display:inline-block;animation:pulse 2s infinite}
 .dot-offline{width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.toast{position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:340px}
 .toast.show{opacity:1}
 .filter-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
 .tab{background:#fff;border:1px solid #ddd;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;color:#555;transition:all .15s}
@@ -123,6 +123,7 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .info-box{background:#e6f1fb;border:1px solid #c5ddf3;color:#185fa5;border-radius:8px;padding:9px 11px;font-size:12px;margin-bottom:1rem;line-height:1.5}
 .sub-title{font-size:12px;font-weight:600;color:#555;margin:1.25rem 0 .5rem;display:flex;align-items:center;gap:6px}
 table.small{min-width:720px}
+.pre-list{font-family:Consolas,Menlo,monospace;font-size:11.5px;line-height:1.7;background:#f8f8f5;border:1px solid #e5e5e0;border-radius:8px;padding:10px 12px;max-height:300px;overflow-y:auto;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -233,6 +234,7 @@ table.small{min-width:720px}
       <button class="btn-add" onclick="openComp()"><i class="ti ti-minus"></i> Lançar compensação</button>
       <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Saldo inicial / ajuste</button>
       <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos do Ponto</button>
+      <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
     </div>
 
     <div class="sub-title"><i class="ti ti-clock-minus"></i> Compensações lançadas</div>
@@ -282,8 +284,6 @@ table.small{min-width:720px}
   </div>
 </div>
 
-<datalist id="lista-colaboradores"></datalist>
-
 <!-- Modal nova solicitação -->
 <div class="modal-bg" id="modal">
   <div class="modal">
@@ -291,11 +291,13 @@ table.small{min-width:720px}
     <div class="form-grid">
       <div class="form-row">
         <label>Líder solicitante</label>
-        <input type="text" id="f-lider" placeholder="Nome do líder...">
+        <select id="f-lider-sel" onchange="toggleOutro('f-lider')"></select>
+        <input class="outro" type="text" id="f-lider-outro" style="display:none" placeholder="Digite o nome completo">
       </div>
       <div class="form-row">
         <label>Colaborador</label>
-        <input type="text" id="f-colaborador" placeholder="Nome do colaborador..." list="lista-colaboradores">
+        <select id="f-colaborador-sel" onchange="toggleOutro('f-colaborador')"></select>
+        <input class="outro" type="text" id="f-colaborador-outro" style="display:none" placeholder="Digite o nome completo">
       </div>
     </div>
     <div class="form-row">
@@ -346,7 +348,8 @@ table.small{min-width:720px}
     <div class="warn-box" id="comp-warn"></div>
     <div class="form-row">
       <label>Colaborador</label>
-      <input type="text" id="c-colaborador" placeholder="Nome do colaborador..." list="lista-colaboradores" oninput="atualizaSaldoModal()">
+      <select id="c-colaborador-sel" onchange="toggleOutro('c-colaborador');atualizaSaldoModal()"></select>
+      <input class="outro" type="text" id="c-colaborador-outro" style="display:none" placeholder="Digite o nome completo" oninput="atualizaSaldoModal()">
       <p class="hint" id="c-saldo-info"></p>
     </div>
     <div class="form-grid">
@@ -388,7 +391,8 @@ table.small{min-width:720px}
     <p style="font-size:12px;color:#666;margin-bottom:1rem;line-height:1.5">Para lançar o saldo que veio do sistema de Ponto. Aceita formato <b>HH:MM</b> (ex: 09:24) ou decimal (ex: 9.4). Use sinal negativo para saldo devedor.</p>
     <div class="form-row">
       <label>Colaborador</label>
-      <input type="text" id="sd-colaborador" placeholder="Nome do colaborador..." list="lista-colaboradores">
+      <select id="sd-colaborador-sel" onchange="toggleOutro('sd-colaborador')"></select>
+      <input class="outro" type="text" id="sd-colaborador-outro" style="display:none" placeholder="Digite o nome completo">
     </div>
     <div class="form-grid">
       <div class="form-row">
@@ -417,7 +421,7 @@ table.small{min-width:720px}
     <h2><i class="ti ti-file-import" style="color:#007e6a"></i> Importar saldos do Ponto</h2>
     <div class="info-box">
       Uma linha por colaborador, no formato <b>NOME ; HH:MM</b>. Já preenchido com o fechamento de <b>julho/2026</b>.
-      Confira os valores antes de importar.
+      Os nomes são convertidos automaticamente para o cadastro padrão.
     </div>
     <div class="form-grid">
       <div class="form-row">
@@ -448,6 +452,22 @@ table.small{min-width:720px}
   </div>
 </div>
 
+<!-- Modal padronizar nomes -->
+<div class="modal-bg" id="modal-padr">
+  <div class="modal wide">
+    <h2><i class="ti ti-wand" style="color:#007e6a"></i> Padronizar nomes no banco</h2>
+    <div class="info-box">
+      A tela já exibe os nomes unificados. Esta ação grava a correção no banco, deixando o histórico limpo.
+      Nada é apagado — apenas o campo do nome é reescrito.
+    </div>
+    <div id="padr-resumo"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closePadronizar()">Cancelar</button>
+      <button class="btn-save" id="btn-padr" onclick="runPadronizar()">Aplicar correções</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -466,7 +486,94 @@ const refHoras = db.ref('horasextras');
 const refComp  = db.ref('compensacoes');
 const refSaldo = db.ref('saldoinicial');
 
-// Saldos do Ponto — fechamento de julho/2026 (transcrito do relatório "Banco de horas")
+/* ===================================================================
+   CADASTRO ÚNICO DE COLABORADORES
+   Nome oficial (como aparece no Ponto) + apelidos usados no dia a dia.
+   Para incluir alguém novo: acrescente na lista e, se necessário,
+   os apelidos em APELIDOS (sempre em minúsculo e sem acento).
+   =================================================================== */
+const COLABORADORES = [
+  "Ana Flavia Souza Brotas",
+  "Ana Laura Tavares de Oliveira",
+  "Bianca Menezes Gonçalves Silva",
+  "Douglas Barbosa da Silva",
+  "Estela Moreno de Paula",
+  "Felipe Andrade Neves",
+  "Fernanda Guardieiro de Almeida",
+  "Gabriela Machado e Oliveira",
+  "Gabriella Amanda de Souza Cardoso",
+  "Gabryel Pereira Tavares",
+  "Gaspar dos Reis Cardoso Junior",
+  "Guilherme Ribeiro",
+  "Jéssica Driely Pereira Santos da Silva",
+  "João Vitor Fini",
+  "Kelle Garcia Assunção",
+  "Lara Rayne Rodrigues de Souza",
+  "Larissa Bernardes de Oliveira",
+  "Larissa Pacheco Silva",
+  "Lauanny Kelly Carolina da Silva",
+  "Lauryana Abadia Silva Bastos",
+  "Luciana da Costa Santana",
+  "Maria Luiza Mendes Pereira",
+  "Maria Rosileide Santos da Silva Arruda",
+  "Marizete Borges Ribeiro",
+  "Mercia Thais Silva Ferreira",
+  "Rafael Duarte Couto Pistori",
+  "Thalita Ramos Silva",
+  "Wellington Rodrigues"
+];
+
+// Pessoas que aparecem como líder/aprovador mas não estão no banco de horas
+const OUTRAS_PESSOAS = ["Geovana"];
+
+// apelido (minúsculo, sem acento) -> nome oficial
+const APELIDOS = {
+  "ana flavia":"Ana Flavia Souza Brotas",
+  "ana laura":"Ana Laura Tavares de Oliveira",
+  "bianca":"Bianca Menezes Gonçalves Silva",
+  "bianca menezes goncalves silva":"Bianca Menezes Gonçalves Silva",
+  "douglas":"Douglas Barbosa da Silva",
+  "estela":"Estela Moreno de Paula",
+  "felipe":"Felipe Andrade Neves",
+  "fernanda":"Fernanda Guardieiro de Almeida",
+  "fernanda guardieiro":"Fernanda Guardieiro de Almeida",
+  "fernanda guardeiro":"Fernanda Guardieiro de Almeida",
+  "gabriela":"Gabriela Machado e Oliveira",
+  "gabi":"Gabriela Machado e Oliveira",
+  "gabriella":"Gabriella Amanda de Souza Cardoso",
+  "gabryel":"Gabryel Pereira Tavares",
+  "gaspar":"Gaspar dos Reis Cardoso Junior",
+  "guilherme":"Guilherme Ribeiro",
+  "jessica":"Jéssica Driely Pereira Santos da Silva",
+  "jessica driely pereira santos da silva":"Jéssica Driely Pereira Santos da Silva",
+  "joao fini":"João Vitor Fini",
+  "joao vitor":"João Vitor Fini",
+  "joao vitor fini":"João Vitor Fini",
+  "kelle":"Kelle Garcia Assunção",
+  "kelle garcia assuncao":"Kelle Garcia Assunção",
+  "lara":"Lara Rayne Rodrigues de Souza",
+  "lara rayne":"Lara Rayne Rodrigues de Souza",
+  "laha rayne rodrigues de souza":"Lara Rayne Rodrigues de Souza",
+  "larissa":"Larissa Pacheco Silva",
+  "larissa pacheco":"Larissa Pacheco Silva",
+  "larissa bernandes":"Larissa Bernardes de Oliveira",
+  "larissa bernardes":"Larissa Bernardes de Oliveira",
+  "lauanny":"Lauanny Kelly Carolina da Silva",
+  "lauryana":"Lauryana Abadia Silva Bastos",
+  "lauryanna":"Lauryana Abadia Silva Bastos",
+  "luciana":"Luciana da Costa Santana",
+  "maria luiza":"Maria Luiza Mendes Pereira",
+  "rosileide":"Maria Rosileide Santos da Silva Arruda",
+  "maria rosileide":"Maria Rosileide Santos da Silva Arruda",
+  "marizete":"Marizete Borges Ribeiro",
+  "mercia":"Mercia Thais Silva Ferreira",
+  "mercia thais":"Mercia Thais Silva Ferreira",
+  "rafael":"Rafael Duarte Couto Pistori",
+  "thalita":"Thalita Ramos Silva",
+  "wellington":"Wellington Rodrigues"
+};
+
+// Saldos do Ponto — fechamento de julho/2026
 const SALDOS_JULHO = `ANA FLAVIA SOUZA BROTAS ; 01:11
 ANA LAURA TAVARES DE OLIVEIRA ; -01:01
 BIANCA MENEZES GONCALVES SILVA ; 09:24
@@ -482,7 +589,7 @@ GUILHERME RIBEIRO ; 02:06
 JESSICA DRIELY PEREIRA SANTOS DA SILVA ; 47:56
 JOAO VITOR FINI ; 03:33
 KELLE GARCIA ASSUNCAO ; 00:47
-LAHA RAYNE RODRIGUES DE SOUZA ; -252:52
+LARA RAYNE RODRIGUES DE SOUZA ; -252:52
 LARISSA PACHECO SILVA ; 00:00
 LARISSA BERNARDES DE OLIVEIRA ; 05:07
 LAUANNY KELLY CAROLINA DA SILVA ; 44:42
@@ -502,77 +609,133 @@ let saldos = {};
 let filtroAtivo = 'todos';
 let acaoAtual = null;
 let idAtual = null;
-let editingId = null;
+let pendentePadr = null;
 
 db.ref('.info/connected').on('value', snap => {
   const dot = document.getElementById('dot-status');
   const label = document.getElementById('sync-label');
-  if(snap.val()){
-    dot.className='dot-live';
-    label.textContent='Sincronizado em tempo real';
-  } else {
-    dot.className='dot-offline';
-    label.textContent='Reconectando...';
-  }
+  if(snap.val()){ dot.className='dot-live'; label.textContent='Sincronizado em tempo real'; }
+  else { dot.className='dot-offline'; label.textContent='Reconectando...'; }
 });
 
 refHoras.on('value', snap => { records = snap.val() || {}; renderTable(); renderComp(); });
 refComp.on('value',  snap => { comps   = snap.val() || {}; renderTable(); renderComp(); });
 refSaldo.on('value', snap => { saldos  = snap.val() || {}; renderComp(); });
 
-/* ===== Utilidades ===== */
+/* ===== Nomes ===== */
+function semAcento(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function chave(s){ return semAcento(s).toLowerCase().trim().replace(/\s+/g,' '); }
+
+const MINUSCULAS = ['de','da','do','das','dos','e'];
+function nomeBonito(n){
+  return String(n||'').trim().split(/\s+/).map((w,i)=>{
+    const l = w.toLowerCase();
+    return (i>0 && MINUSCULAS.includes(semAcento(l))) ? l : l.charAt(0).toUpperCase()+l.slice(1);
+  }).join(' ');
+}
+
+// Converte qualquer variação para o nome oficial do cadastro
+function canonico(nome){
+  const k = chave(nome);
+  if(!k) return '';
+  if(APELIDOS[k]) return APELIDOS[k];
+  const exato = COLABORADORES.concat(OUTRAS_PESSOAS).find(c=>chave(c)===k);
+  if(exato) return exato;
+  const pref = COLABORADORES.filter(c=> chave(c).startsWith(k+' '));
+  if(pref.length===1) return pref[0];
+  return nomeBonito(nome);
+}
+// Nome curto para as tabelas (primeiro + último sobrenome)
+function nomeCurto(n){
+  const p = String(n||'').trim().split(/\s+/).filter(w=>!MINUSCULAS.includes(semAcento(w.toLowerCase())));
+  if(p.length<=2) return p.join(' ');
+  // primeiros nomes compostos mantêm o segundo nome
+  const COMPOSTOS = ['ana','maria','jose','joao','luiz','luis'];
+  if(COMPOSTOS.includes(chave(p[0]))) return p[0]+' '+p[1]+' '+p[p.length-1];
+  return p[0]+' '+p[p.length-1];
+}
+function todosOsNomes(){
+  const extras = [...new Set([
+    ...Object.values(records).flatMap(r=>[r&&r.colaborador, r&&r.lider]),
+    ...Object.values(comps).map(c=>c&&c.colaborador),
+    ...Object.values(saldos).map(s=>s&&s.colaborador)
+  ].filter(Boolean).map(canonico))];
+  const base = COLABORADORES.concat(OUTRAS_PESSOAS);
+  const fora = extras.filter(n=>!base.some(b=>chave(b)===chave(n))).sort();
+  return {base: base.slice().sort((a,b)=>a.localeCompare(b,'pt-BR')), fora};
+}
+
+/* ===== Selects de nome ===== */
+function preencheSelect(prefixo){
+  const sel = document.getElementById(prefixo+'-sel');
+  const {base, fora} = todosOsNomes();
+  sel.innerHTML = '<option value="">Selecione...</option>' +
+    base.map(n=>`<option value="${n}">${n}</option>`).join('') +
+    (fora.length ? '<optgroup label="Fora do cadastro">'+fora.map(n=>`<option value="${n}">${n}</option>`).join('')+'</optgroup>' : '') +
+    '<option value="__outro__">➕ Outro (digitar)...</option>';
+  document.getElementById(prefixo+'-outro').style.display='none';
+  document.getElementById(prefixo+'-outro').value='';
+}
+function toggleOutro(prefixo){
+  const sel = document.getElementById(prefixo+'-sel');
+  const inp = document.getElementById(prefixo+'-outro');
+  const outro = sel.value==='__outro__';
+  inp.style.display = outro ? 'block' : 'none';
+  if(outro) inp.focus();
+}
+function valorNome(prefixo){
+  const sel = document.getElementById(prefixo+'-sel');
+  if(sel.value==='__outro__') return canonico(document.getElementById(prefixo+'-outro').value);
+  return sel.value;
+}
+
+/* ===== Utilidades gerais ===== */
 function setView(v){
   document.getElementById('view-horas').classList.toggle('active', v==='horas');
   document.getElementById('view-comp').classList.toggle('active', v==='comp');
   document.getElementById('mtab-horas').classList.toggle('active', v==='horas');
   document.getElementById('mtab-comp').classList.toggle('active', v==='comp');
 }
-
 function setFilter(f, el){
   filtroAtivo = f;
   document.querySelectorAll('.filter-tabs .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   renderTable();
 }
-
 function formatDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
 function formatMes(m){ if(!m) return '—'; const [y,mo]=m.split('-'); const l=new Date(y,mo-1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); return l.charAt(0).toUpperCase()+l.slice(1); }
-function initials(n){ if(!n) return '?'; return n.trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function initials(n){ if(!n) return '?'; return String(n).trim().split(/\s+/).filter(w=>!MINUSCULAS.includes(semAcento(w.toLowerCase()))).map(w=>w[0]).filter((w,i,a)=>i===0||i===a.length-1).slice(0,2).join('').toUpperCase(); }
 function statusClass(s){ return s==='Aprovado'?'b-aprovado':s==='Negado'?'b-negado':'b-pendente'; }
-function avatarClass(nome){ return (nome||'').toLowerCase().startsWith('g')?'avatar avatar-g':'avatar'; }
-function normKey(n){ return (n||'').trim().toLowerCase().replace(/\s+/g,' '); }
-function nomeBonito(n){ return (n||'').trim().split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' '); }
-
-// Formata horas decimais como HH:MM (ex: 9.4 -> "9h24")
+function avatarClass(nome){ return chave(nome).startsWith('g')?'avatar avatar-g':'avatar'; }
 function fmtHM(h){
   const v = Number(h)||0;
   const neg = v < -0.0001;
   const tot = Math.round(Math.abs(v)*60);
   return (neg?'−':'') + Math.floor(tot/60) + 'h' + String(tot%60).padStart(2,'0');
 }
-// Aceita "09:24", "-11:05", "9.4", "9,4" -> decimal
 function parseHoras(txt){
   const s = String(txt||'').trim().replace(',', '.');
   if(!s) return NaN;
   const neg = s.startsWith('-') || s.startsWith('−');
   const body = s.replace(/^[-−+]/,'');
   let val;
-  if(body.includes(':')){
-    const [h,m] = body.split(':');
-    val = (parseInt(h,10)||0) + (parseInt(m,10)||0)/60;
-  } else {
-    val = parseFloat(body);
-  }
+  if(body.includes(':')){ const [h,m]=body.split(':'); val=(parseInt(h,10)||0)+(parseInt(m,10)||0)/60; }
+  else val = parseFloat(body);
   if(isNaN(val)) return NaN;
   return neg ? -val : val;
 }
+function celulaNome(n){
+  const full = canonico(n) || '—';
+  return `<div style="display:flex;align-items:center;gap:6px" title="${full}">
+      <div class="${avatarClass(full)}">${initials(full)}</div>
+      <span style="font-weight:500;white-space:nowrap">${nomeCurto(full)||'—'}</span>
+    </div>`;
+}
 
 /* ================= HORAS EXTRAS ================= */
-
 function renderTable(){
   const all = Object.entries(records).map(([id,r])=>({...r,id}));
 
-  // --- popular filtro de meses ---
   const meses = [...new Set(all.map(r=>(r.data||'').substring(0,7)).filter(m=>m && parseInt(m.substring(0,4))>=2020))].sort().reverse();
   const selMes = document.getElementById('mes-filtro');
   const mesAtual = selMes.value || 'todos';
@@ -584,7 +747,6 @@ function renderTable(){
 
   const noMes = all.filter(r=> mesSel==='todos' || (r.data||'').startsWith(mesSel));
 
-  // --- stats do período ---
   document.getElementById('s-total').textContent = noMes.length;
   document.getElementById('s-pend').textContent  = noMes.filter(r=>r.status==='Pendente').length;
   document.getElementById('s-aprov').textContent = noMes.filter(r=>r.status==='Aprovado').length;
@@ -592,13 +754,12 @@ function renderTable(){
   const totalH = noMes.filter(r=>r.status==='Aprovado').reduce((s,r)=>s+parseFloat(r.horas||0),0);
   document.getElementById('s-horas').textContent = fmtHM(totalH);
 
-  // --- tabela ---
-  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const q = chave(document.getElementById('search-input').value);
   const filtered = noMes
     .filter(r=>{
       const matchFiltro = filtroAtivo==='todos' || r.status===filtroAtivo;
-      const matchQ = !q || ((r.lider||'')+(r.colaborador||'')+(r.motivo||'')).toLowerCase().includes(q);
-      return matchFiltro && matchQ;
+      const alvo = chave(canonico(r.lider)+' '+canonico(r.colaborador)+' '+(r.motivo||''));
+      return matchFiltro && (!q || alvo.includes(q));
     })
     .sort((a,b)=> (b.criadoEm||0)-(a.criadoEm||0));
 
@@ -611,13 +772,8 @@ function renderTable(){
     tbody.innerHTML = filtered.map((r,i)=>`
       <tr>
         <td style="color:#999;font-size:11px">${i+1}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div class="${avatarClass(r.lider)}">${initials(r.lider)}</div>
-            <span style="font-weight:500">${r.lider||'—'}</span>
-          </div>
-        </td>
-        <td>${r.colaborador||'—'}</td>
+        <td>${celulaNome(r.lider)}</td>
+        <td>${celulaNome(r.colaborador)}</td>
         <td style="max-width:200px">${r.motivo||'—'}</td>
         <td style="white-space:nowrap">${formatDate(r.data)}</td>
         <td><strong>${fmtHM(r.horas)}</strong></td>
@@ -655,25 +811,21 @@ function renderRanking(noMes, mesSel){
     return;
   }
 
-  // compensações do mesmo período
-  const compsMes = Object.values(comps).filter(c=> c && (mesSel==='todos' || (c.data||'').startsWith(mesSel)));
   const mapaComp = {};
-  compsMes.forEach(c=>{ const k=normKey(c.colaborador); mapaComp[k]=(mapaComp[k]||0)+parseFloat(c.horas||0); });
+  Object.values(comps).filter(c=> c && (mesSel==='todos' || (c.data||'').startsWith(mesSel)))
+    .forEach(c=>{ const k=canonico(c.colaborador); mapaComp[k]=(mapaComp[k]||0)+parseFloat(c.horas||0); });
 
-  const mapa = {}, nomeOriginal = {};
+  const mapa = {};
   aprovados.forEach(r=>{
-    const raw = r.colaborador||'Desconhecido';
-    const key = normKey(raw);
-    if(!nomeOriginal[key]) nomeOriginal[key] = nomeBonito(raw);
-    mapa[key] = (mapa[key]||0) + parseFloat(r.horas||0);
+    const nome = canonico(r.colaborador) || 'Não informado';
+    mapa[nome] = (mapa[nome]||0) + parseFloat(r.horas||0);
   });
 
   const lista = Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
   const max = lista[0][1] || 1;
 
-  document.getElementById('ranking-list').innerHTML = lista.map(([key,h])=>{
-    const nome = nomeOriginal[key];
-    const comp = mapaComp[key]||0;
+  document.getElementById('ranking-list').innerHTML = lista.map(([nome,h])=>{
+    const comp = mapaComp[nome]||0;
     const pct = Math.round((h/max)*100);
     return `
       <div class="ranking-item">
@@ -688,40 +840,32 @@ function renderRanking(noMes, mesSel){
 }
 
 /* ================= COMPENSAÇÃO ================= */
-
 function calcularSaldos(){
   const mapa = {};
   const get = (raw)=>{
-    const key = normKey(raw);
-    if(!mapa[key]) mapa[key] = {nome: nomeBonito(raw), inicial:0, aprovadas:0, compensado:0};
-    return mapa[key];
+    const nome = canonico(raw);
+    if(!nome) return null;
+    if(!mapa[nome]) mapa[nome] = {nome, inicial:0, aprovadas:0, compensado:0};
+    return mapa[nome];
   };
-  Object.values(saldos).forEach(s=>{ if(s && s.colaborador) get(s.colaborador).inicial += parseFloat(s.horas||0); });
-  Object.values(records).forEach(r=>{ if(r && r.status==='Aprovado' && r.colaborador) get(r.colaborador).aprovadas += parseFloat(r.horas||0); });
-  Object.values(comps).forEach(c=>{ if(c && c.colaborador) get(c.colaborador).compensado += parseFloat(c.horas||0); });
+  Object.values(saldos).forEach(s=>{ const o=s&&get(s.colaborador); if(o) o.inicial += parseFloat(s.horas||0); });
+  Object.values(records).forEach(r=>{ if(r&&r.status==='Aprovado'){ const o=get(r.colaborador); if(o) o.aprovadas += parseFloat(r.horas||0); } });
+  Object.values(comps).forEach(c=>{ const o=c&&get(c.colaborador); if(o) o.compensado += parseFloat(c.horas||0); });
   Object.keys(mapa).forEach(k=>{ mapa[k].saldo = mapa[k].inicial + mapa[k].aprovadas - mapa[k].compensado; });
   return mapa;
 }
-
 function saldoDe(nome){
   const m = calcularSaldos();
-  const k = normKey(nome);
-  return m[k] ? m[k].saldo : 0;
+  const c = canonico(nome);
+  return m[c] ? m[c].saldo : 0;
 }
 
 function renderComp(){
   const mapa = calcularSaldos();
-  const q = (document.getElementById('comp-search').value||'').toLowerCase();
-
-  const nomes = [...new Set([
-    ...Object.values(records).map(r=>r&&r.colaborador).filter(Boolean),
-    ...Object.values(comps).map(c=>c&&c.colaborador).filter(Boolean),
-    ...Object.values(saldos).map(s=>s&&s.colaborador).filter(Boolean)
-  ].map(nomeBonito))].sort();
-  document.getElementById('lista-colaboradores').innerHTML = nomes.map(n=>`<option value="${n}">`).join('');
+  const q = chave(document.getElementById('comp-search').value);
 
   const lista = Object.values(mapa)
-    .filter(m=> !q || m.nome.toLowerCase().includes(q))
+    .filter(m=> !q || chave(m.nome).includes(q))
     .sort((a,b)=> b.saldo-a.saldo);
 
   const el = document.getElementById('saldo-list');
@@ -751,9 +895,8 @@ function renderComp(){
   document.getElementById('c-saldo').textContent      = fmtHM(tot.s);
   document.getElementById('c-colabs').textContent     = Object.keys(mapa).length;
 
-  // tabela de compensações
   const cl = Object.entries(comps).map(([id,c])=>({...c,id}))
-    .filter(c=> !q || ((c.colaborador||'')+(c.obs||'')).toLowerCase().includes(q))
+    .filter(c=> !q || chave(canonico(c.colaborador)+' '+(c.obs||'')).includes(q))
     .sort((a,b)=> (b.data||'').localeCompare(a.data||'') || (b.criadoEm||0)-(a.criadoEm||0));
   const ctb = document.getElementById('comp-tbody');
   if(!cl.length){
@@ -763,12 +906,7 @@ function renderComp(){
     ctb.innerHTML = cl.map((c,i)=>`
       <tr>
         <td style="color:#999;font-size:11px">${i+1}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div class="${avatarClass(c.colaborador)}">${initials(c.colaborador)}</div>
-            <span style="font-weight:500">${c.colaborador||'—'}</span>
-          </div>
-        </td>
+        <td>${celulaNome(c.colaborador)}</td>
         <td style="white-space:nowrap">${formatDate(c.data)}</td>
         <td style="white-space:nowrap">${c.horaIni||'—'} às ${c.horaFim||'—'}</td>
         <td><strong style="color:#854f0b">−${fmtHM(c.horas)}</strong></td>
@@ -778,10 +916,9 @@ function renderComp(){
       </tr>`).join('');
   }
 
-  // tabela de saldos iniciais
   const sl = Object.entries(saldos).map(([id,s])=>({...s,id}))
-    .filter(s=> !q || ((s.colaborador||'')+(s.obs||'')).toLowerCase().includes(q))
-    .sort((a,b)=> (b.mes||'').localeCompare(a.mes||'') || (a.colaborador||'').localeCompare(b.colaborador||''));
+    .filter(s=> !q || chave(canonico(s.colaborador)+' '+(s.obs||'')).includes(q))
+    .sort((a,b)=> (b.mes||'').localeCompare(a.mes||'') || canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR'));
   const stb = document.getElementById('saldo-tbody');
   if(!sl.length){
     stb.innerHTML=''; document.getElementById('saldo-empty').style.display='block';
@@ -792,12 +929,7 @@ function renderComp(){
       return `
       <tr>
         <td style="color:#999;font-size:11px">${i+1}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div class="${avatarClass(s.colaborador)}">${initials(s.colaborador)}</div>
-            <span style="font-weight:500">${s.colaborador||'—'}</span>
-          </div>
-        </td>
+        <td>${celulaNome(s.colaborador)}</td>
         <td style="white-space:nowrap">${formatMes(s.mes)}</td>
         <td><strong style="color:${h<0?'#a32d2d':'#185fa5'}">${h>=0?'+':''}${fmtHM(h)}</strong></td>
         <td style="max-width:220px">${s.obs||'—'}</td>
@@ -817,17 +949,17 @@ function calcHoras(){
   const [h1,m1] = ini.split(':').map(Number);
   const [h2,m2] = fim.split(':').map(Number);
   let mins = (h2*60+m2) - (h1*60+m1);
-  if(mins < 0) mins += 1440; // atravessa a meia-noite
+  if(mins < 0) mins += 1440;
   hid.value = mins/60;
   txt.value = fmtHM(mins/60);
   atualizaSaldoModal();
 }
 
 function atualizaSaldoModal(){
-  const nome = document.getElementById('c-colaborador').value;
+  const nome = valorNome('c-colaborador');
   const info = document.getElementById('c-saldo-info');
   const warn = document.getElementById('comp-warn');
-  if(!nome.trim()){ info.textContent=''; warn.classList.remove('show'); return; }
+  if(!nome){ info.textContent=''; warn.classList.remove('show'); return; }
   const s = saldoDe(nome);
   const pedido = parseFloat(document.getElementById('c-horas').value||0);
   info.innerHTML = `Saldo disponível hoje: <b style="color:${s>0?'#0f6e56':'#a32d2d'}">${fmtHM(s)}</b>` +
@@ -839,7 +971,8 @@ function atualizaSaldoModal(){
 }
 
 function openComp(){
-  ['c-colaborador','c-data','c-ini','c-fim','c-horas','c-horas-txt','c-obs'].forEach(i=>document.getElementById(i).value='');
+  preencheSelect('c-colaborador');
+  ['c-data','c-ini','c-fim','c-horas','c-horas-txt','c-obs'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('c-saldo-info').textContent='';
   document.getElementById('comp-warn').classList.remove('show');
   document.getElementById('modal-comp').classList.add('open');
@@ -847,7 +980,7 @@ function openComp(){
 function closeComp(){ document.getElementById('modal-comp').classList.remove('open'); }
 
 function saveComp(){
-  const colaborador = nomeBonito(document.getElementById('c-colaborador').value);
+  const colaborador = valorNome('c-colaborador');
   const data = document.getElementById('c-data').value;
   const horaIni = document.getElementById('c-ini').value;
   const horaFim = document.getElementById('c-fim').value;
@@ -860,10 +993,9 @@ function saveComp(){
     criadoEm: Date.now(),
     criadoEmTxt: new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
   });
-  showToast(`Compensação de ${fmtHM(horas)} lançada para ${colaborador}.`);
+  showToast(`Compensação de ${fmtHM(horas)} lançada para ${nomeCurto(colaborador)}.`);
   closeComp();
 }
-
 function deleteComp(id){
   if(!confirm('Excluir esta compensação? As horas voltam para o saldo.')) return;
   refComp.child(id).remove();
@@ -871,7 +1003,8 @@ function deleteComp(id){
 }
 
 function openSaldo(){
-  ['sd-colaborador','sd-horas','sd-obs'].forEach(i=>document.getElementById(i).value='');
+  preencheSelect('sd-colaborador');
+  ['sd-horas','sd-obs'].forEach(i=>document.getElementById(i).value='');
   const d = new Date();
   document.getElementById('sd-mes').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   document.getElementById('modal-saldo').classList.add('open');
@@ -879,7 +1012,7 @@ function openSaldo(){
 function closeSaldo(){ document.getElementById('modal-saldo').classList.remove('open'); }
 
 function saveSaldo(){
-  const colaborador = nomeBonito(document.getElementById('sd-colaborador').value);
+  const colaborador = valorNome('sd-colaborador');
   const mes = document.getElementById('sd-mes').value;
   const horas = parseHoras(document.getElementById('sd-horas').value);
   const obs = document.getElementById('sd-obs').value.trim();
@@ -889,10 +1022,9 @@ function saveSaldo(){
     criadoEm: Date.now(),
     criadoEmTxt: new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
   });
-  showToast(`Saldo de ${fmtHM(horas)} lançado para ${colaborador}.`);
+  showToast(`Saldo de ${fmtHM(horas)} lançado para ${nomeCurto(colaborador)}.`);
   closeSaldo();
 }
-
 function deleteSaldo(id){
   if(!confirm('Excluir este lançamento de saldo?')) return;
   refSaldo.child(id).remove();
@@ -914,22 +1046,18 @@ function runImport(){
   const linhas = document.getElementById('im-dados').value.split('\n').map(l=>l.trim()).filter(Boolean);
   if(!mes){ showToast('Informe o mês de referência.'); return; }
 
-  const itens = [];
-  const erros = [];
+  const itens = [], erros = [];
   linhas.forEach(l=>{
     let nome, valor;
-    if(l.includes(';')){
-      const p = l.split(';');
-      valor = p.pop().trim();
-      nome = p.join(';').trim();
-    } else {
+    if(l.includes(';')){ const p=l.split(';'); valor=p.pop().trim(); nome=p.join(';').trim(); }
+    else {
       const m = l.match(/^(.*?)[\s\t]+([-−]?[\d:.,]+)$/);
       if(!m){ erros.push(l); return; }
-      nome = m[1].trim(); valor = m[2].trim();
+      nome=m[1].trim(); valor=m[2].trim();
     }
     const h = parseHoras(valor);
     if(!nome || isNaN(h)){ erros.push(l); return; }
-    itens.push({nome: nomeBonito(nome), horas: h});
+    itens.push({nome: canonico(nome), horas: h});
   });
 
   const validos = itens.filter(i => soPos ? i.horas > 0.001 : Math.abs(i.horas) > 0.001);
@@ -940,9 +1068,9 @@ function runImport(){
 
   const updates = {};
   if(substituir){
-    const chaves = new Set(validos.map(i=>normKey(i.nome)));
+    const chaves = new Set(validos.map(i=>chave(i.nome)));
     Object.entries(saldos).forEach(([id,s])=>{
-      if(s && s.mes===mes && chaves.has(normKey(s.colaborador))) updates[id] = null;
+      if(s && s.mes===mes && chaves.has(chave(canonico(s.colaborador)))) updates[id] = null;
     });
   }
   const agora = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -957,43 +1085,106 @@ function runImport(){
   closeImport();
 }
 
-/* ================= HORAS EXTRAS — modais ================= */
+/* ===== Padronizar nomes gravados no banco ===== */
+function calcularPadronizacao(){
+  const upH={}, upC={}, upS={};
+  const mudancas = new Map();
+  let nH=0, nC=0, nS=0, nDatas=0;
 
-function openModal(id){
-  editingId = id||null;
-  document.getElementById('modal-title').textContent = 'Nova solicitação de horas extras';
-  ['f-lider','f-colaborador','f-motivo','f-data','f-horas'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('modal').classList.add('open');
+  const reg = (de,para)=>{ if(de!==para){ const k=de+' ⟶ '+para; mudancas.set(k,(mudancas.get(k)||0)+1); } };
+
+  Object.entries(records).forEach(([id,r])=>{
+    if(!r) return; let mudou=false;
+    const c = canonico(r.colaborador), l = canonico(r.lider);
+    if(r.colaborador && c!==r.colaborador){ upH[id+'/colaborador']=c; reg(r.colaborador,c); mudou=true; }
+    if(r.lider && l!==r.lider){ upH[id+'/lider']=l; reg(r.lider,l); mudou=true; }
+    if(r.data && /^\d{4}-/.test(r.data) && parseInt(r.data.substring(0,4))<2000){
+      const p=r.data.split('-'); upH[id+'/data']='2026-'+p[1]+'-'+p[2]; nDatas++; mudou=true;
+    }
+    if(mudou) nH++;
+  });
+  Object.entries(comps).forEach(([id,c])=>{
+    if(!c||!c.colaborador) return;
+    const n=canonico(c.colaborador);
+    if(n!==c.colaborador){ upC[id+'/colaborador']=n; reg(c.colaborador,n); nC++; }
+  });
+  Object.entries(saldos).forEach(([id,s])=>{
+    if(!s||!s.colaborador) return;
+    const n=canonico(s.colaborador);
+    if(n!==s.colaborador){ upS[id+'/colaborador']=n; reg(s.colaborador,n); nS++; }
+  });
+  return {upH,upC,upS,nH,nC,nS,nDatas,mudancas};
 }
 
+function openPadronizar(){
+  const p = calcularPadronizacao();
+  pendentePadr = p;
+  const el = document.getElementById('padr-resumo');
+  const btn = document.getElementById('btn-padr');
+  const total = p.nH+p.nC+p.nS;
+  if(!total){
+    el.innerHTML = '<p style="font-size:13px;color:#0f6e56;padding:.5rem 0"><i class="ti ti-circle-check"></i> Tudo já está padronizado. Nenhuma alteração necessária.</p>';
+    btn.style.display='none';
+    document.getElementById('modal-padr').classList.add('open');
+    return;
+  }
+  btn.style.display='';
+  const linhas = [...p.mudancas.entries()].sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>`${k}   (${v}×)`).join('\n');
+  el.innerHTML =
+    `<p style="font-size:13px;margin-bottom:.75rem"><b>${total}</b> registro(s) serão corrigidos` +
+    (p.nDatas?` — incluindo <b>${p.nDatas}</b> data(s) com ano inválido (ex: 0006 → 2026)`:'') + '.</p>' +
+    `<div class="pre-list">${linhas||'(somente correção de datas)'}</div>`;
+  document.getElementById('modal-padr').classList.add('open');
+}
+function closePadronizar(){ document.getElementById('modal-padr').classList.remove('open'); pendentePadr=null; }
+
+function runPadronizar(){
+  const p = pendentePadr || calcularPadronizacao();
+  const tarefas = [];
+  if(Object.keys(p.upH).length) tarefas.push(refHoras.update(p.upH));
+  if(Object.keys(p.upC).length) tarefas.push(refComp.update(p.upC));
+  if(Object.keys(p.upS).length) tarefas.push(refSaldo.update(p.upS));
+  if(!tarefas.length){ showToast('Nada a corrigir.'); closePadronizar(); return; }
+  Promise.all(tarefas)
+    .then(()=> showToast(`${p.nH+p.nC+p.nS} registro(s) padronizado(s).`))
+    .catch(()=> showToast('Erro ao gravar. Verifique a conexão.'));
+  closePadronizar();
+}
+
+/* ================= HORAS EXTRAS — modais ================= */
+function openModal(){
+  document.getElementById('modal-title').textContent = 'Nova solicitação de horas extras';
+  preencheSelect('f-lider');
+  preencheSelect('f-colaborador');
+  ['f-motivo','f-data','f-horas'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('modal').classList.add('open');
+}
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 
 function saveRecord(){
-  const lider = document.getElementById('f-lider').value.trim();
-  const colaborador = nomeBonito(document.getElementById('f-colaborador').value);
+  const lider = valorNome('f-lider');
+  const colaborador = valorNome('f-colaborador');
   const motivo = document.getElementById('f-motivo').value.trim();
   const data = document.getElementById('f-data').value;
   const horas = document.getElementById('f-horas').value;
   if(!lider||!colaborador||!motivo||!data||!horas){ showToast('Preencha todos os campos!'); return; }
-  const rec = { lider, colaborador, motivo, data, horas: parseFloat(horas), status:'Pendente', criadoEm: Date.now(), aprovadoPor: null, aprovadoEm: null };
-  refHoras.push(rec);
+  refHoras.push({ lider, colaborador, motivo, data, horas: parseFloat(horas), status:'Pendente', criadoEm: Date.now(), aprovadoPor: null, aprovadoEm: null });
   showToast('Solicitação enviada!');
   closeModal();
 }
 
 function abrirAprov(id, acao){
-  idAtual = id;
-  acaoAtual = acao;
+  idAtual = id; acaoAtual = acao;
   const r = records[id];
   document.getElementById('aprov-title').textContent = acao==='aprovar' ? '✅ Aprovar horas extras' : '❌ Negar horas extras';
-  document.getElementById('aprov-desc').textContent = `${r.colaborador} — ${fmtHM(r.horas)} em ${formatDate(r.data)} — Motivo: ${r.motivo}`;
+  document.getElementById('aprov-desc').textContent = `${canonico(r.colaborador)} — ${fmtHM(r.horas)} em ${formatDate(r.data)} — Motivo: ${r.motivo}`;
   document.getElementById('f-aprovador').value = '';
   const btn = document.getElementById('btn-confirmar-aprov');
   btn.style.background = acao==='aprovar'?'#007e6a':'#a32d2d';
   btn.textContent = acao==='aprovar'?'Confirmar aprovação':'Confirmar negação';
   document.getElementById('modal-aprov').classList.add('open');
 }
-
 function closeAprov(){ document.getElementById('modal-aprov').classList.remove('open'); }
 
 function confirmarAcao(){
@@ -1019,10 +1210,10 @@ function showToast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
+  setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
-['modal','modal-aprov','modal-comp','modal-saldo','modal-import'].forEach(id=>{
+['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr'].forEach(id=>{
   const el = document.getElementById(id);
   el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
 });
