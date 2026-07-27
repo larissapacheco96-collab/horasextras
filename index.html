@@ -17,8 +17,11 @@ body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a}
 .title-area h1{font-size:16px;font-weight:500;color:#1a1a1a}
 .toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
 .toolbar input[type=text]{flex:1;min-width:180px;font-size:13px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a}
+.toolbar select{font-size:13px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
 .btn-add{background:#007e6a;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
 .btn-add:hover{background:#005f50}
+.btn-alt{background:#fff;color:#007e6a;border:1px solid #9fe1cb;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-alt:hover{background:#e1f5ee}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1.25rem}
 .stat{background:#fff;border-radius:8px;padding:.75rem 1rem;border:1px solid #e8e8e4}
 .stat-label{font-size:11px;color:#666;margin-bottom:4px}
@@ -26,6 +29,7 @@ body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a}
 .stat-val.pend{color:#854f0b}
 .stat-val.aprov{color:#0f6e56}
 .stat-val.neg{color:#a32d2d}
+.stat-val.comp{color:#185fa5}
 .table-wrap{overflow-x:auto;border:1px solid #ddd;border-radius:12px;background:#fff}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
 thead th{background:#f8f8f5;padding:10px;text-align:left;font-weight:500;font-size:11px;color:#666;border-bottom:1px solid #ddd;white-space:nowrap}
@@ -40,8 +44,6 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .avatar{width:28px;height:28px;border-radius:50%;background:#e6f1fb;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#185fa5;flex-shrink:0}
 .avatar-g{background:#eaf3de;color:#3b6d11}
 .btn-icon{background:none;border:none;cursor:pointer;font-size:15px;padding:3px 6px;border-radius:6px;font-weight:500}
-.btn-edit{color:#185fa5;border:1px solid #b8d4f0;background:#e6f1fb;margin-right:4px}
-.btn-edit:hover{background:#b8d4f0}
 .btn-apr{color:#0f6e56;border:1px solid #9fe1cb;background:#e1f5ee}
 .btn-apr:hover{background:#9fe1cb}
 .btn-neg{color:#a32d2d;border:1px solid #f7c1c1;background:#fcebeb;margin-left:4px}
@@ -51,11 +53,16 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:12px;border:1px solid #ddd;padding:1.5rem;width:min(560px,96vw);max-height:90vh;overflow-y:auto}
+.modal.wide{width:min(720px,96vw)}
 .modal h2{font-size:16px;font-weight:500;margin-bottom:1.25rem}
 .form-row{margin-bottom:1rem}
 .form-row label{display:block;font-size:12px;color:#555;margin-bottom:4px;font-weight:500}
 .form-row input,.form-row textarea,.form-row select{width:100%;font-size:13px;padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-family:Arial,sans-serif}
 .form-row textarea{resize:vertical;min-height:64px}
+.form-row textarea.mono{font-family:Consolas,Menlo,monospace;font-size:12px;line-height:1.6;min-height:240px}
+.form-row input[readonly]{background:#f5f5f0;color:#555}
+.check-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:1rem}
+.check-row input{width:auto}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #eee}
@@ -70,8 +77,6 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .toast{position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.show{opacity:1}
-.aprov-info{font-size:11px;color:#0f6e56;margin-top:4px;display:flex;align-items:center;gap:4px}
-.neg-info{font-size:11px;color:#a32d2d;margin-top:4px;display:flex;align-items:center;gap:4px}
 .filter-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
 .tab{background:#fff;border:1px solid #ddd;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;color:#555;transition:all .15s}
 .tab.active{background:#007e6a;color:#fff;border-color:#007e6a}
@@ -79,14 +84,45 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .ranking-section.visible{display:block}
 .ranking-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px}
 .ranking-header h2{font-size:13px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:6px}
-.ranking-filter select{font-size:12px;padding:5px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
-.ranking-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.ranking-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
 .ranking-item{background:#f8fdf9;border:1px solid #d4eedf;border-radius:8px;padding:.65rem .85rem}
 .ranking-name{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ranking-horas{font-size:18px;font-weight:700;color:#0f6e56;line-height:1}
 .ranking-horas span{font-size:11px;font-weight:400;color:#666;margin-left:2px}
 .ranking-bar-bg{height:4px;background:#e1f5ee;border-radius:4px;margin-top:6px}
 .ranking-bar-fill{height:4px;background:#007e6a;border-radius:4px;transition:width .4s}
+.ranking-sub{font-size:11px;color:#666;margin-top:7px;padding-top:6px;border-top:1px dashed #d4eedf;display:flex;justify-content:space-between;gap:6px}
+.ranking-sub b{color:#854f0b}
+
+/* ===== Abas principais ===== */
+.main-tabs{display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:1px solid #ddd;flex-wrap:wrap}
+.mtab{background:none;border:none;border-bottom:2px solid transparent;padding:9px 18px;font-size:13px;font-weight:500;color:#777;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:Arial,sans-serif;margin-bottom:-1px}
+.mtab:hover{color:#1a1a1a}
+.mtab.active{color:#007e6a;border-bottom-color:#007e6a}
+.view{display:none}
+.view.active{display:block}
+
+/* ===== Painel de saldos ===== */
+.saldo-section{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem}
+.saldo-section h2{font-size:13px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:6px;margin-bottom:.85rem}
+.saldo-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:10px}
+.saldo-card{border:1px solid #e0e0dc;border-radius:10px;padding:.75rem .9rem;background:#fcfcfa}
+.saldo-card.positivo{background:#f8fdf9;border-color:#d4eedf}
+.saldo-card.zerado{background:#fafafa;border-color:#e5e5e5}
+.saldo-card.negativo{background:#fdf6f6;border-color:#f2d3d3}
+.saldo-nome{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saldo-val{font-size:22px;font-weight:700;color:#0f6e56;line-height:1}
+.saldo-val.neg{color:#a32d2d}
+.saldo-val.zero{color:#888}
+.saldo-val span{font-size:11px;font-weight:400;color:#666;margin-left:3px}
+.saldo-break{margin-top:8px;padding-top:7px;border-top:1px dashed #dcdcd6;display:grid;grid-template-columns:1fr auto;gap:3px 8px;font-size:11px;color:#555}
+.saldo-break b{font-weight:600;color:#1a1a1a}
+.hint{font-size:11px;color:#888;margin-top:6px;line-height:1.5}
+.warn-box{background:#faeeda;border:1px solid #f0d9ae;color:#854f0b;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:1rem;display:none}
+.warn-box.show{display:block}
+.info-box{background:#e6f1fb;border:1px solid #c5ddf3;color:#185fa5;border-radius:8px;padding:9px 11px;font-size:12px;margin-bottom:1rem;line-height:1.5}
+.sub-title{font-size:12px;font-weight:600;color:#555;margin:1.25rem 0 .5rem;display:flex;align-items:center;gap:6px}
+table.small{min-width:720px}
 </style>
 </head>
 <body>
@@ -104,65 +140,151 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
     </div>
   </div>
 
-  <div class="stats">
-    <div class="stat"><div class="stat-label">Total solicitações</div><div class="stat-val" id="s-total">0</div></div>
-    <div class="stat"><div class="stat-label">Pendentes</div><div class="stat-val pend" id="s-pend">0</div></div>
-    <div class="stat"><div class="stat-label">Aprovadas</div><div class="stat-val aprov" id="s-aprov">0</div></div>
-    <div class="stat"><div class="stat-label">Negadas</div><div class="stat-val neg" id="s-neg">0</div></div>
-    <div class="stat"><div class="stat-label">Total horas aprovadas</div><div class="stat-val aprov" id="s-horas">0h</div></div>
+  <!-- ABAS PRINCIPAIS -->
+  <div class="main-tabs">
+    <button class="mtab active" id="mtab-horas" onclick="setView('horas')"><i class="ti ti-clock-plus"></i> Horas extras</button>
+    <button class="mtab" id="mtab-comp" onclick="setView('comp')"><i class="ti ti-clock-minus"></i> Compensação de horas</button>
   </div>
 
-  <!-- Painel horas por colaborador -->
-  <div class="ranking-section" id="ranking-section">
-    <div class="ranking-header">
-      <h2><i class="ti ti-chart-bar" style="color:#007e6a"></i> Horas aprovadas por colaborador</h2>
-      <div class="ranking-filter">
-        <select id="ranking-mes" onchange="renderRanking(Object.values(records))">
-          <option value="todos">Todos os meses</option>
-        </select>
+  <!-- ================= VIEW: HORAS EXTRAS ================= -->
+  <div class="view active" id="view-horas">
+
+    <div class="toolbar" style="margin-bottom:1.25rem">
+      <label style="font-size:12px;color:#555;font-weight:500">Período:</label>
+      <select id="mes-filtro" onchange="renderTable()">
+        <option value="todos">Todos os meses</option>
+      </select>
+      <span id="mes-label" style="font-size:11px;color:#888"></span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Total solicitações</div><div class="stat-val" id="s-total">0</div></div>
+      <div class="stat"><div class="stat-label">Pendentes</div><div class="stat-val pend" id="s-pend">0</div></div>
+      <div class="stat"><div class="stat-label">Aprovadas</div><div class="stat-val aprov" id="s-aprov">0</div></div>
+      <div class="stat"><div class="stat-label">Negadas</div><div class="stat-val neg" id="s-neg">0</div></div>
+      <div class="stat"><div class="stat-label">Total horas aprovadas</div><div class="stat-val aprov" id="s-horas">0h00</div></div>
+    </div>
+
+    <!-- Painel horas por colaborador -->
+    <div class="ranking-section" id="ranking-section">
+      <div class="ranking-header">
+        <h2><i class="ti ti-chart-bar" style="color:#007e6a"></i> Horas aprovadas por colaborador <span id="ranking-periodo" style="font-weight:400;color:#888"></span></h2>
+      </div>
+      <div class="ranking-list" id="ranking-list"></div>
+      <p class="hint">"Compensadas" mostra o que já foi baixado do saldo no período, para comparar o que foi liberado com o que foi efetivamente usado.</p>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="tab active" onclick="setFilter('todos',this)">Todos</button>
+      <button class="tab" onclick="setFilter('Pendente',this)">Pendentes</button>
+      <button class="tab" onclick="setFilter('Aprovado',this)">Aprovados</button>
+      <button class="tab" onclick="setFilter('Negado',this)">Negados</button>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="search-input" placeholder="Buscar por líder, colaborador, motivo..." oninput="renderTable()">
+      <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i> Nova solicitação</button>
+      <div class="sync-badge"><span class="dot-offline" id="dot-status"></span> <span id="sync-label">Conectando...</span></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Líder</th>
+            <th>Colaborador</th>
+            <th>Motivo</th>
+            <th>Data</th>
+            <th>Horas</th>
+            <th>Status</th>
+            <th>Aprovado por</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty-msg" class="empty" style="display:none">
+        <i class="ti ti-clock-off" style="font-size:28px;display:block;margin-bottom:8px"></i>
+        Nenhuma solicitação encontrada.
       </div>
     </div>
-    <div class="ranking-list" id="ranking-list"></div>
   </div>
 
-  <div class="filter-tabs">
-    <button class="tab active" onclick="setFilter('todos',this)">Todos</button>
-    <button class="tab" onclick="setFilter('Pendente',this)">Pendentes</button>
-    <button class="tab" onclick="setFilter('Aprovado',this)">Aprovados</button>
-    <button class="tab" onclick="setFilter('Negado',this)">Negados</button>
-  </div>
+  <!-- ================= VIEW: COMPENSAÇÃO ================= -->
+  <div class="view" id="view-comp">
 
-  <div class="toolbar">
-    <input type="text" id="search-input" placeholder="Buscar por líder, colaborador, motivo..." oninput="renderTable()">
-    <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i> Nova solicitação</button>
-    <div class="sync-badge"><span class="dot-offline" id="dot-status"></span> <span id="sync-label">Conectando...</span></div>
-  </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Saldo inicial lançado</div><div class="stat-val comp" id="c-saldoini">0h00</div></div>
+      <div class="stat"><div class="stat-label">Horas extras aprovadas</div><div class="stat-val aprov" id="c-aprovadas">0h00</div></div>
+      <div class="stat"><div class="stat-label">Total compensado</div><div class="stat-val pend" id="c-compensado">0h00</div></div>
+      <div class="stat"><div class="stat-label">Saldo disponível</div><div class="stat-val aprov" id="c-saldo">0h00</div></div>
+      <div class="stat"><div class="stat-label">Colaboradores</div><div class="stat-val" id="c-colabs">0</div></div>
+    </div>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Líder</th>
-          <th>Colaborador</th>
-          <th>Motivo</th>
-          <th>Data</th>
-          <th>Horas</th>
-          <th>Status</th>
-          <th>Aprovado por</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div id="empty-msg" class="empty" style="display:none">
-      <i class="ti ti-clock-off" style="font-size:28px;display:block;margin-bottom:8px"></i>
-      Nenhuma solicitação encontrada.
+    <div class="saldo-section">
+      <h2><i class="ti ti-wallet" style="color:#007e6a"></i> Saldo de horas por colaborador</h2>
+      <div class="saldo-list" id="saldo-list"></div>
+      <p class="hint"><b>Saldo disponível</b> = saldo inicial (lançado a partir do Ponto) + horas extras aprovadas neste sistema − horas já compensadas.</p>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="comp-search" placeholder="Buscar por colaborador, motivo..." oninput="renderComp()">
+      <button class="btn-add" onclick="openComp()"><i class="ti ti-minus"></i> Lançar compensação</button>
+      <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Saldo inicial / ajuste</button>
+      <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos do Ponto</button>
+    </div>
+
+    <div class="sub-title"><i class="ti ti-clock-minus"></i> Compensações lançadas</div>
+    <div class="table-wrap">
+      <table class="small">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Colaborador</th>
+            <th>Data</th>
+            <th>Horário</th>
+            <th>Horas compensadas</th>
+            <th>Observação</th>
+            <th>Lançado em</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="comp-tbody"></tbody>
+      </table>
+      <div id="comp-empty" class="empty" style="display:none">
+        <i class="ti ti-clock-off" style="font-size:28px;display:block;margin-bottom:8px"></i>
+        Nenhuma compensação lançada.
+      </div>
+    </div>
+
+    <div class="sub-title"><i class="ti ti-adjustments"></i> Saldos iniciais e ajustes manuais</div>
+    <div class="table-wrap">
+      <table class="small">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Colaborador</th>
+            <th>Mês de referência</th>
+            <th>Horas</th>
+            <th>Observação</th>
+            <th>Lançado em</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="saldo-tbody"></tbody>
+      </table>
+      <div id="saldo-empty" class="empty" style="display:none">
+        <i class="ti ti-file-off" style="font-size:28px;display:block;margin-bottom:8px"></i>
+        Nenhum saldo inicial lançado.
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Modal nova solicitação / edição -->
+<datalist id="lista-colaboradores"></datalist>
+
+<!-- Modal nova solicitação -->
 <div class="modal-bg" id="modal">
   <div class="modal">
     <h2 id="modal-title">Nova solicitação de horas extras</h2>
@@ -173,7 +295,7 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
       </div>
       <div class="form-row">
         <label>Colaborador</label>
-        <input type="text" id="f-colaborador" placeholder="Nome do colaborador...">
+        <input type="text" id="f-colaborador" placeholder="Nome do colaborador..." list="lista-colaboradores">
       </div>
     </div>
     <div class="form-row">
@@ -192,7 +314,7 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-save" id="btn-save-record" onclick="saveRecord()">Enviar solicitação</button>
+      <button class="btn-save" onclick="saveRecord()">Enviar solicitação</button>
     </div>
   </div>
 </div>
@@ -217,6 +339,115 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
   </div>
 </div>
 
+<!-- Modal compensação -->
+<div class="modal-bg" id="modal-comp">
+  <div class="modal">
+    <h2><i class="ti ti-clock-minus" style="color:#007e6a"></i> Lançar compensação de horas</h2>
+    <div class="warn-box" id="comp-warn"></div>
+    <div class="form-row">
+      <label>Colaborador</label>
+      <input type="text" id="c-colaborador" placeholder="Nome do colaborador..." list="lista-colaboradores" oninput="atualizaSaldoModal()">
+      <p class="hint" id="c-saldo-info"></p>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Dia da compensação</label>
+        <input type="date" id="c-data">
+      </div>
+      <div class="form-row">
+        <label>Horas a deduzir</label>
+        <input type="text" id="c-horas-txt" readonly placeholder="0h00">
+        <input type="hidden" id="c-horas">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Horário de início</label>
+        <input type="time" id="c-ini" oninput="calcHoras()">
+      </div>
+      <div class="form-row">
+        <label>Horário de término</label>
+        <input type="time" id="c-fim" oninput="calcHoras()">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Observação (opcional)</label>
+      <textarea id="c-obs" rows="2" placeholder="Ex: saída antecipada, folga parcial..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeComp()">Cancelar</button>
+      <button class="btn-save" onclick="saveComp()">Lançar compensação</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal saldo inicial / ajuste -->
+<div class="modal-bg" id="modal-saldo">
+  <div class="modal">
+    <h2><i class="ti ti-adjustments" style="color:#007e6a"></i> Saldo inicial / ajuste manual</h2>
+    <p style="font-size:12px;color:#666;margin-bottom:1rem;line-height:1.5">Para lançar o saldo que veio do sistema de Ponto. Aceita formato <b>HH:MM</b> (ex: 09:24) ou decimal (ex: 9.4). Use sinal negativo para saldo devedor.</p>
+    <div class="form-row">
+      <label>Colaborador</label>
+      <input type="text" id="sd-colaborador" placeholder="Nome do colaborador..." list="lista-colaboradores">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Mês de referência</label>
+        <input type="month" id="sd-mes">
+      </div>
+      <div class="form-row">
+        <label>Saldo (HH:MM ou decimal)</label>
+        <input type="text" id="sd-horas" placeholder="Ex: 09:24 ou -11:05">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Observação (opcional)</label>
+      <textarea id="sd-obs" rows="2" placeholder="Ex: saldo do Ponto fechado de julho"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeSaldo()">Cancelar</button>
+      <button class="btn-save" onclick="saveSaldo()">Salvar saldo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal importação em lote -->
+<div class="modal-bg" id="modal-import">
+  <div class="modal wide">
+    <h2><i class="ti ti-file-import" style="color:#007e6a"></i> Importar saldos do Ponto</h2>
+    <div class="info-box">
+      Uma linha por colaborador, no formato <b>NOME ; HH:MM</b>. Já preenchido com o fechamento de <b>julho/2026</b>.
+      Confira os valores antes de importar.
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Mês de referência</label>
+        <input type="month" id="im-mes" value="2026-07">
+      </div>
+      <div class="form-row">
+        <label>Observação aplicada a todos</label>
+        <input type="text" id="im-obs" value="Saldo do Ponto — fechamento julho/2026">
+      </div>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="im-so-positivos" checked>
+      <label for="im-so-positivos" style="margin:0">Importar somente saldos positivos (ignorar negativos e zerados)</label>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="im-substituir" checked>
+      <label for="im-substituir" style="margin:0">Substituir lançamentos já existentes deste mesmo mês</label>
+    </div>
+    <div class="form-row">
+      <label>Dados</label>
+      <textarea id="im-dados" class="mono"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeImport()">Cancelar</button>
+      <button class="btn-save" onclick="runImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -232,24 +463,46 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const refHoras = db.ref('horasextras');
+const refComp  = db.ref('compensacoes');
+const refSaldo = db.ref('saldoinicial');
+
+// Saldos do Ponto — fechamento de julho/2026 (transcrito do relatório "Banco de horas")
+const SALDOS_JULHO = `ANA FLAVIA SOUZA BROTAS ; 01:11
+ANA LAURA TAVARES DE OLIVEIRA ; -01:01
+BIANCA MENEZES GONCALVES SILVA ; 09:24
+DOUGLAS BARBOSA DA SILVA ; 06:36
+ESTELA MORENO DE PAULA ; 00:50
+FELIPE ANDRADE NEVES ; 05:09
+FERNANDA GUARDIEIRO DE ALMEIDA ; 01:51
+GABRIELA MACHADO E OLIVEIRA ; 00:00
+GABRIELLA AMANDA DE SOUZA CARDOSO ; -11:05
+GABRYEL PEREIRA TAVARES ; 11:54
+GASPAR DOS REIS CARDOSO JUNIOR ; 02:39
+GUILHERME RIBEIRO ; 02:06
+JESSICA DRIELY PEREIRA SANTOS DA SILVA ; 47:56
+JOAO VITOR FINI ; 03:33
+KELLE GARCIA ASSUNCAO ; 00:47
+LAHA RAYNE RODRIGUES DE SOUZA ; -252:52
+LARISSA PACHECO SILVA ; 00:00
+LARISSA BERNARDES DE OLIVEIRA ; 05:07
+LAUANNY KELLY CAROLINA DA SILVA ; 44:42
+LAURYANA ABADIA SILVA BASTOS ; 13:24
+LUCIANA DA COSTA SANTANA ; -05:52
+MARIA LUIZA MENDES PEREIRA ; 01:24
+MARIA ROSILEIDE SANTOS DA SILVA ARRUDA ; 03:12
+MARIZETE BORGES RIBEIRO ; -21:27
+MERCIA THAIS SILVA FERREIRA ; 00:00
+RAFAEL DUARTE COUTO PISTORI ; -85:36
+THALITA RAMOS SILVA ; 15:53
+WELLINGTON RODRIGUES ; 13:54`;
 
 let records = {};
+let comps = {};
+let saldos = {};
 let filtroAtivo = 'todos';
 let acaoAtual = null;
 let idAtual = null;
 let editingId = null;
-
-// Padroniza digitação de nomes: remove espaços extras e ajusta capitalização
-// (mantém conectores como "de", "da", "do" em minúsculo, exceto na primeira palavra)
-function normalizeName(str){
-  if(!str) return '';
-  const conectores = ['de','da','do','das','dos','e'];
-  return str.trim().replace(/\s+/g,' ').toLowerCase().split(' ').map((w,i)=>{
-    if(!w) return w;
-    if(i>0 && conectores.includes(w)) return w;
-    return w.charAt(0).toUpperCase()+w.slice(1);
-  }).join(' ');
-}
 
 db.ref('.info/connected').on('value', snap => {
   const dot = document.getElementById('dot-status');
@@ -263,33 +516,91 @@ db.ref('.info/connected').on('value', snap => {
   }
 });
 
-refHoras.on('value', snap => {
-  records = snap.val() || {};
-  renderTable();
-});
+refHoras.on('value', snap => { records = snap.val() || {}; renderTable(); renderComp(); });
+refComp.on('value',  snap => { comps   = snap.val() || {}; renderTable(); renderComp(); });
+refSaldo.on('value', snap => { saldos  = snap.val() || {}; renderComp(); });
+
+/* ===== Utilidades ===== */
+function setView(v){
+  document.getElementById('view-horas').classList.toggle('active', v==='horas');
+  document.getElementById('view-comp').classList.toggle('active', v==='comp');
+  document.getElementById('mtab-horas').classList.toggle('active', v==='horas');
+  document.getElementById('mtab-comp').classList.toggle('active', v==='comp');
+}
 
 function setFilter(f, el){
   filtroAtivo = f;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.filter-tabs .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   renderTable();
 }
 
 function formatDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function formatMes(m){ if(!m) return '—'; const [y,mo]=m.split('-'); const l=new Date(y,mo-1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); return l.charAt(0).toUpperCase()+l.slice(1); }
 function initials(n){ if(!n) return '?'; return n.trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
 function statusClass(s){ return s==='Aprovado'?'b-aprovado':s==='Negado'?'b-negado':'b-pendente'; }
 function avatarClass(nome){ return (nome||'').toLowerCase().startsWith('g')?'avatar avatar-g':'avatar'; }
+function normKey(n){ return (n||'').trim().toLowerCase().replace(/\s+/g,' '); }
+function nomeBonito(n){ return (n||'').trim().split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' '); }
+
+// Formata horas decimais como HH:MM (ex: 9.4 -> "9h24")
+function fmtHM(h){
+  const v = Number(h)||0;
+  const neg = v < -0.0001;
+  const tot = Math.round(Math.abs(v)*60);
+  return (neg?'−':'') + Math.floor(tot/60) + 'h' + String(tot%60).padStart(2,'0');
+}
+// Aceita "09:24", "-11:05", "9.4", "9,4" -> decimal
+function parseHoras(txt){
+  const s = String(txt||'').trim().replace(',', '.');
+  if(!s) return NaN;
+  const neg = s.startsWith('-') || s.startsWith('−');
+  const body = s.replace(/^[-−+]/,'');
+  let val;
+  if(body.includes(':')){
+    const [h,m] = body.split(':');
+    val = (parseInt(h,10)||0) + (parseInt(m,10)||0)/60;
+  } else {
+    val = parseFloat(body);
+  }
+  if(isNaN(val)) return NaN;
+  return neg ? -val : val;
+}
+
+/* ================= HORAS EXTRAS ================= */
 
 function renderTable(){
-  const q = (document.getElementById('search-input').value||'').toLowerCase();
-  const list = Object.entries(records).map(([id,r])=>({...r,id}))
-    .sort((a,b)=> (b.criadoEm||0)-(a.criadoEm||0));
+  const all = Object.entries(records).map(([id,r])=>({...r,id}));
 
-  const filtered = list.filter(r=>{
-    const matchFiltro = filtroAtivo==='todos' || r.status===filtroAtivo;
-    const matchQ = !q || (r.lider+r.colaborador+r.motivo).toLowerCase().includes(q);
-    return matchFiltro && matchQ;
-  });
+  // --- popular filtro de meses ---
+  const meses = [...new Set(all.map(r=>(r.data||'').substring(0,7)).filter(m=>m && parseInt(m.substring(0,4))>=2020))].sort().reverse();
+  const selMes = document.getElementById('mes-filtro');
+  const mesAtual = selMes.value || 'todos';
+  selMes.innerHTML = '<option value="todos">Todos os meses</option>' +
+    meses.map(m=>`<option value="${m}" ${mesAtual===m?'selected':''}>${formatMes(m)}</option>`).join('');
+  if(mesAtual!=='todos' && !meses.includes(mesAtual)) selMes.value='todos';
+  const mesSel = selMes.value;
+  document.getElementById('mes-label').textContent = mesSel==='todos' ? 'todos os lançamentos' : 'lançamentos de '+formatMes(mesSel);
+
+  const noMes = all.filter(r=> mesSel==='todos' || (r.data||'').startsWith(mesSel));
+
+  // --- stats do período ---
+  document.getElementById('s-total').textContent = noMes.length;
+  document.getElementById('s-pend').textContent  = noMes.filter(r=>r.status==='Pendente').length;
+  document.getElementById('s-aprov').textContent = noMes.filter(r=>r.status==='Aprovado').length;
+  document.getElementById('s-neg').textContent   = noMes.filter(r=>r.status==='Negado').length;
+  const totalH = noMes.filter(r=>r.status==='Aprovado').reduce((s,r)=>s+parseFloat(r.horas||0),0);
+  document.getElementById('s-horas').textContent = fmtHM(totalH);
+
+  // --- tabela ---
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const filtered = noMes
+    .filter(r=>{
+      const matchFiltro = filtroAtivo==='todos' || r.status===filtroAtivo;
+      const matchQ = !q || ((r.lider||'')+(r.colaborador||'')+(r.motivo||'')).toLowerCase().includes(q);
+      return matchFiltro && matchQ;
+    })
+    .sort((a,b)=> (b.criadoEm||0)-(a.criadoEm||0));
 
   const tbody = document.getElementById('tbody');
   if(!filtered.length){
@@ -309,7 +620,7 @@ function renderTable(){
         <td>${r.colaborador||'—'}</td>
         <td style="max-width:200px">${r.motivo||'—'}</td>
         <td style="white-space:nowrap">${formatDate(r.data)}</td>
-        <td><strong>${r.horas||'—'}h</strong></td>
+        <td><strong>${fmtHM(r.horas)}</strong></td>
         <td><span class="badge ${statusClass(r.status)}">${r.status||'Pendente'}</span></td>
         <td>
           ${r.aprovadoPor ? `
@@ -322,7 +633,6 @@ function renderTable(){
         </td>
         <td style="white-space:nowrap">
           ${r.status==='Pendente' ? `
-            <button class="btn-icon btn-edit" onclick="openModal('${r.id}')" title="Editar"><i class="ti ti-pencil"></i> Editar</button>
             <button class="btn-icon btn-apr" onclick="abrirAprov('${r.id}','aprovar')" title="Aprovar"><i class="ti ti-check"></i> Aprovar</button>
             <button class="btn-icon btn-neg" onclick="abrirAprov('${r.id}','negar')" title="Negar"><i class="ti ti-x"></i> Negar</button>
           ` : `<span style="font-size:11px;color:#bbb">Finalizado</span>`}
@@ -331,109 +641,343 @@ function renderTable(){
       </tr>`).join('');
   }
 
-  // stats
-  const all = Object.values(records);
-  document.getElementById('s-total').textContent = all.length;
-  document.getElementById('s-pend').textContent = all.filter(r=>r.status==='Pendente').length;
-  document.getElementById('s-aprov').textContent = all.filter(r=>r.status==='Aprovado').length;
-  document.getElementById('s-neg').textContent = all.filter(r=>r.status==='Negado').length;
-  const totalH = all.filter(r=>r.status==='Aprovado').reduce((s,r)=>s+parseFloat(r.horas||0),0);
-  document.getElementById('s-horas').textContent = totalH % 1 === 0 ? totalH+'h' : totalH.toFixed(1)+'h';
-
-  // ranking por colaborador
-  renderRanking(all);
+  renderRanking(noMes, mesSel);
 }
 
-function renderRanking(all){
-  const aprovados = all.filter(r=>r.status==='Aprovado');
+function renderRanking(noMes, mesSel){
   const section = document.getElementById('ranking-section');
-  if(!aprovados.length){ section.classList.remove('visible'); return; }
+  document.getElementById('ranking-periodo').textContent = mesSel==='todos' ? '— todos os meses' : '— '+formatMes(mesSel);
 
-  // Popular select de meses
-  const meses = [...new Set(aprovados.map(r=>(r.data||'').substring(0,7)).filter(m => {
-    if(!m) return false;
-    const ano = parseInt(m.substring(0,4));
-    return ano >= 2020;
-  }))].sort().reverse();
-  const sel = document.getElementById('ranking-mes');
-  const mesSel = sel.value;
-  sel.innerHTML = '<option value="todos">Todos os meses</option>' +
-    meses.map(m => {
-      const [y,mo] = m.split('-');
-      const label = new Date(y, mo-1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-      return `<option value="${m}" ${mesSel===m?'selected':''}>${label.charAt(0).toUpperCase()+label.slice(1)}</option>`;
-    }).join('');
-
-  // Filtrar por mês selecionado
-  const filtroMes = sel.value;
-  const filtrados = filtroMes==='todos'
-    ? aprovados.filter(r => parseInt((r.data||'').substring(0,4)) >= 2020)
-    : aprovados.filter(r=>(r.data||'').startsWith(filtroMes));
-
-  if(!filtrados.length){
-    document.getElementById('ranking-list').innerHTML = '<p style="font-size:12px;color:#888;padding:.5rem 0">Nenhuma hora aprovada neste mês.</p>';
+  const aprovados = noMes.filter(r=>r.status==='Aprovado' && parseInt((r.data||'').substring(0,4))>=2020);
+  if(!aprovados.length){
+    document.getElementById('ranking-list').innerHTML = '<p style="font-size:12px;color:#888;padding:.5rem 0">Nenhuma hora aprovada neste período.</p>';
     section.classList.add('visible');
     return;
   }
 
-  const mapa = {};
-  const nomeOriginal = {};
-  filtrados.forEach(r=>{
+  // compensações do mesmo período
+  const compsMes = Object.values(comps).filter(c=> c && (mesSel==='todos' || (c.data||'').startsWith(mesSel)));
+  const mapaComp = {};
+  compsMes.forEach(c=>{ const k=normKey(c.colaborador); mapaComp[k]=(mapaComp[k]||0)+parseFloat(c.horas||0); });
+
+  const mapa = {}, nomeOriginal = {};
+  aprovados.forEach(r=>{
     const raw = r.colaborador||'Desconhecido';
-    const key = raw.trim().toLowerCase();
-    if(!nomeOriginal[key]) nomeOriginal[key] = raw.trim().charAt(0).toUpperCase() + raw.trim().slice(1).toLowerCase();
+    const key = normKey(raw);
+    if(!nomeOriginal[key]) nomeOriginal[key] = nomeBonito(raw);
     mapa[key] = (mapa[key]||0) + parseFloat(r.horas||0);
   });
 
   const lista = Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
-  const max = lista[0][1];
+  const max = lista[0][1] || 1;
 
   document.getElementById('ranking-list').innerHTML = lista.map(([key,h])=>{
     const nome = nomeOriginal[key];
-    const label = h % 1 === 0 ? h+'h' : h.toFixed(1)+'h';
+    const comp = mapaComp[key]||0;
     const pct = Math.round((h/max)*100);
     return `
       <div class="ranking-item">
         <div class="ranking-name" title="${nome}">${nome}</div>
-        <div class="ranking-horas">${label}<span>aprovadas</span></div>
+        <div class="ranking-horas">${fmtHM(h)}<span>aprovadas</span></div>
         <div class="ranking-bar-bg"><div class="ranking-bar-fill" style="width:${pct}%"></div></div>
+        <div class="ranking-sub"><span>Compensadas no período</span><b>${comp>0?'−'+fmtHM(comp):'0h00'}</b></div>
       </div>`;
   }).join('');
 
   section.classList.add('visible');
 }
 
+/* ================= COMPENSAÇÃO ================= */
+
+function calcularSaldos(){
+  const mapa = {};
+  const get = (raw)=>{
+    const key = normKey(raw);
+    if(!mapa[key]) mapa[key] = {nome: nomeBonito(raw), inicial:0, aprovadas:0, compensado:0};
+    return mapa[key];
+  };
+  Object.values(saldos).forEach(s=>{ if(s && s.colaborador) get(s.colaborador).inicial += parseFloat(s.horas||0); });
+  Object.values(records).forEach(r=>{ if(r && r.status==='Aprovado' && r.colaborador) get(r.colaborador).aprovadas += parseFloat(r.horas||0); });
+  Object.values(comps).forEach(c=>{ if(c && c.colaborador) get(c.colaborador).compensado += parseFloat(c.horas||0); });
+  Object.keys(mapa).forEach(k=>{ mapa[k].saldo = mapa[k].inicial + mapa[k].aprovadas - mapa[k].compensado; });
+  return mapa;
+}
+
+function saldoDe(nome){
+  const m = calcularSaldos();
+  const k = normKey(nome);
+  return m[k] ? m[k].saldo : 0;
+}
+
+function renderComp(){
+  const mapa = calcularSaldos();
+  const q = (document.getElementById('comp-search').value||'').toLowerCase();
+
+  const nomes = [...new Set([
+    ...Object.values(records).map(r=>r&&r.colaborador).filter(Boolean),
+    ...Object.values(comps).map(c=>c&&c.colaborador).filter(Boolean),
+    ...Object.values(saldos).map(s=>s&&s.colaborador).filter(Boolean)
+  ].map(nomeBonito))].sort();
+  document.getElementById('lista-colaboradores').innerHTML = nomes.map(n=>`<option value="${n}">`).join('');
+
+  const lista = Object.values(mapa)
+    .filter(m=> !q || m.nome.toLowerCase().includes(q))
+    .sort((a,b)=> b.saldo-a.saldo);
+
+  const el = document.getElementById('saldo-list');
+  if(!lista.length){
+    el.innerHTML = '<p style="font-size:12px;color:#888;padding:.5rem 0">Nenhum colaborador com horas ou saldo lançado ainda.</p>';
+  } else {
+    el.innerHTML = lista.map(m=>{
+      const cls  = m.saldo>0.001?'positivo':(m.saldo<-0.001?'negativo':'zerado');
+      const vcls = m.saldo>0.001?'':(m.saldo<-0.001?'neg':'zero');
+      return `
+      <div class="saldo-card ${cls}">
+        <div class="saldo-nome" title="${m.nome}">${m.nome}</div>
+        <div class="saldo-val ${vcls}">${fmtHM(m.saldo)}<span>disponível</span></div>
+        <div class="saldo-break">
+          <div>Saldo inicial</div><div style="text-align:right"><b>${fmtHM(m.inicial)}</b></div>
+          <div>Extras aprovadas</div><div style="text-align:right"><b>${fmtHM(m.aprovadas)}</b></div>
+          <div>Compensadas</div><div style="text-align:right"><b>${m.compensado>0?'−':''}${fmtHM(m.compensado)}</b></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const tot = Object.values(mapa).reduce((a,m)=>({i:a.i+m.inicial,ap:a.ap+m.aprovadas,c:a.c+m.compensado,s:a.s+m.saldo}),{i:0,ap:0,c:0,s:0});
+  document.getElementById('c-saldoini').textContent   = fmtHM(tot.i);
+  document.getElementById('c-aprovadas').textContent  = fmtHM(tot.ap);
+  document.getElementById('c-compensado').textContent = fmtHM(tot.c);
+  document.getElementById('c-saldo').textContent      = fmtHM(tot.s);
+  document.getElementById('c-colabs').textContent     = Object.keys(mapa).length;
+
+  // tabela de compensações
+  const cl = Object.entries(comps).map(([id,c])=>({...c,id}))
+    .filter(c=> !q || ((c.colaborador||'')+(c.obs||'')).toLowerCase().includes(q))
+    .sort((a,b)=> (b.data||'').localeCompare(a.data||'') || (b.criadoEm||0)-(a.criadoEm||0));
+  const ctb = document.getElementById('comp-tbody');
+  if(!cl.length){
+    ctb.innerHTML=''; document.getElementById('comp-empty').style.display='block';
+  } else {
+    document.getElementById('comp-empty').style.display='none';
+    ctb.innerHTML = cl.map((c,i)=>`
+      <tr>
+        <td style="color:#999;font-size:11px">${i+1}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="${avatarClass(c.colaborador)}">${initials(c.colaborador)}</div>
+            <span style="font-weight:500">${c.colaborador||'—'}</span>
+          </div>
+        </td>
+        <td style="white-space:nowrap">${formatDate(c.data)}</td>
+        <td style="white-space:nowrap">${c.horaIni||'—'} às ${c.horaFim||'—'}</td>
+        <td><strong style="color:#854f0b">−${fmtHM(c.horas)}</strong></td>
+        <td style="max-width:220px">${c.obs||'—'}</td>
+        <td style="font-size:11px;color:#888;white-space:nowrap">${c.criadoEmTxt||'—'}</td>
+        <td><button class="btn-icon btn-del" onclick="deleteComp('${c.id}')" title="Excluir"><i class="ti ti-trash"></i></button></td>
+      </tr>`).join('');
+  }
+
+  // tabela de saldos iniciais
+  const sl = Object.entries(saldos).map(([id,s])=>({...s,id}))
+    .filter(s=> !q || ((s.colaborador||'')+(s.obs||'')).toLowerCase().includes(q))
+    .sort((a,b)=> (b.mes||'').localeCompare(a.mes||'') || (a.colaborador||'').localeCompare(b.colaborador||''));
+  const stb = document.getElementById('saldo-tbody');
+  if(!sl.length){
+    stb.innerHTML=''; document.getElementById('saldo-empty').style.display='block';
+  } else {
+    document.getElementById('saldo-empty').style.display='none';
+    stb.innerHTML = sl.map((s,i)=>{
+      const h = parseFloat(s.horas||0);
+      return `
+      <tr>
+        <td style="color:#999;font-size:11px">${i+1}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="${avatarClass(s.colaborador)}">${initials(s.colaborador)}</div>
+            <span style="font-weight:500">${s.colaborador||'—'}</span>
+          </div>
+        </td>
+        <td style="white-space:nowrap">${formatMes(s.mes)}</td>
+        <td><strong style="color:${h<0?'#a32d2d':'#185fa5'}">${h>=0?'+':''}${fmtHM(h)}</strong></td>
+        <td style="max-width:220px">${s.obs||'—'}</td>
+        <td style="font-size:11px;color:#888;white-space:nowrap">${s.criadoEmTxt||'—'}</td>
+        <td><button class="btn-icon btn-del" onclick="deleteSaldo('${s.id}')" title="Excluir"><i class="ti ti-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function calcHoras(){
+  const ini = document.getElementById('c-ini').value;
+  const fim = document.getElementById('c-fim').value;
+  const hid = document.getElementById('c-horas');
+  const txt = document.getElementById('c-horas-txt');
+  if(!ini || !fim){ hid.value=''; txt.value=''; atualizaSaldoModal(); return; }
+  const [h1,m1] = ini.split(':').map(Number);
+  const [h2,m2] = fim.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if(mins < 0) mins += 1440; // atravessa a meia-noite
+  hid.value = mins/60;
+  txt.value = fmtHM(mins/60);
+  atualizaSaldoModal();
+}
+
+function atualizaSaldoModal(){
+  const nome = document.getElementById('c-colaborador').value;
+  const info = document.getElementById('c-saldo-info');
+  const warn = document.getElementById('comp-warn');
+  if(!nome.trim()){ info.textContent=''; warn.classList.remove('show'); return; }
+  const s = saldoDe(nome);
+  const pedido = parseFloat(document.getElementById('c-horas').value||0);
+  info.innerHTML = `Saldo disponível hoje: <b style="color:${s>0?'#0f6e56':'#a32d2d'}">${fmtHM(s)}</b>` +
+    (pedido>0 ? ` &nbsp;→&nbsp; após esta compensação: <b style="color:${(s-pedido)>=0?'#0f6e56':'#a32d2d'}">${fmtHM(s-pedido)}</b>` : '');
+  if(pedido>0 && pedido > s + 0.001){
+    warn.textContent = `Atenção: a compensação de ${fmtHM(pedido)} é maior que o saldo disponível (${fmtHM(s)}). O saldo ficará negativo.`;
+    warn.classList.add('show');
+  } else warn.classList.remove('show');
+}
+
+function openComp(){
+  ['c-colaborador','c-data','c-ini','c-fim','c-horas','c-horas-txt','c-obs'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('c-saldo-info').textContent='';
+  document.getElementById('comp-warn').classList.remove('show');
+  document.getElementById('modal-comp').classList.add('open');
+}
+function closeComp(){ document.getElementById('modal-comp').classList.remove('open'); }
+
+function saveComp(){
+  const colaborador = nomeBonito(document.getElementById('c-colaborador').value);
+  const data = document.getElementById('c-data').value;
+  const horaIni = document.getElementById('c-ini').value;
+  const horaFim = document.getElementById('c-fim').value;
+  const horas = parseFloat(document.getElementById('c-horas').value||0);
+  const obs = document.getElementById('c-obs').value.trim();
+  if(!colaborador || !data || !horaIni || !horaFim){ showToast('Preencha colaborador, dia e horários!'); return; }
+  if(!(horas>0)){ showToast('O horário informado resulta em 0h.'); return; }
+  refComp.push({
+    colaborador, data, horaIni, horaFim, horas, obs,
+    criadoEm: Date.now(),
+    criadoEmTxt: new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  });
+  showToast(`Compensação de ${fmtHM(horas)} lançada para ${colaborador}.`);
+  closeComp();
+}
+
+function deleteComp(id){
+  if(!confirm('Excluir esta compensação? As horas voltam para o saldo.')) return;
+  refComp.child(id).remove();
+  showToast('Compensação excluída.');
+}
+
+function openSaldo(){
+  ['sd-colaborador','sd-horas','sd-obs'].forEach(i=>document.getElementById(i).value='');
+  const d = new Date();
+  document.getElementById('sd-mes').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('modal-saldo').classList.add('open');
+}
+function closeSaldo(){ document.getElementById('modal-saldo').classList.remove('open'); }
+
+function saveSaldo(){
+  const colaborador = nomeBonito(document.getElementById('sd-colaborador').value);
+  const mes = document.getElementById('sd-mes').value;
+  const horas = parseHoras(document.getElementById('sd-horas').value);
+  const obs = document.getElementById('sd-obs').value.trim();
+  if(!colaborador || !mes || isNaN(horas)){ showToast('Preencha colaborador, mês e saldo (ex: 09:24).'); return; }
+  refSaldo.push({
+    colaborador, mes, horas, obs,
+    criadoEm: Date.now(),
+    criadoEmTxt: new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  });
+  showToast(`Saldo de ${fmtHM(horas)} lançado para ${colaborador}.`);
+  closeSaldo();
+}
+
+function deleteSaldo(id){
+  if(!confirm('Excluir este lançamento de saldo?')) return;
+  refSaldo.child(id).remove();
+  showToast('Lançamento excluído.');
+}
+
+/* ===== Importação em lote ===== */
+function openImport(){
+  document.getElementById('im-dados').value = SALDOS_JULHO;
+  document.getElementById('modal-import').classList.add('open');
+}
+function closeImport(){ document.getElementById('modal-import').classList.remove('open'); }
+
+function runImport(){
+  const mes = document.getElementById('im-mes').value;
+  const obs = document.getElementById('im-obs').value.trim();
+  const soPos = document.getElementById('im-so-positivos').checked;
+  const substituir = document.getElementById('im-substituir').checked;
+  const linhas = document.getElementById('im-dados').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!mes){ showToast('Informe o mês de referência.'); return; }
+
+  const itens = [];
+  const erros = [];
+  linhas.forEach(l=>{
+    let nome, valor;
+    if(l.includes(';')){
+      const p = l.split(';');
+      valor = p.pop().trim();
+      nome = p.join(';').trim();
+    } else {
+      const m = l.match(/^(.*?)[\s\t]+([-−]?[\d:.,]+)$/);
+      if(!m){ erros.push(l); return; }
+      nome = m[1].trim(); valor = m[2].trim();
+    }
+    const h = parseHoras(valor);
+    if(!nome || isNaN(h)){ erros.push(l); return; }
+    itens.push({nome: nomeBonito(nome), horas: h});
+  });
+
+  const validos = itens.filter(i => soPos ? i.horas > 0.001 : Math.abs(i.horas) > 0.001);
+  if(!validos.length){ showToast('Nenhuma linha válida para importar.'); return; }
+
+  const totalTxt = fmtHM(validos.reduce((s,i)=>s+i.horas,0));
+  if(!confirm(`Importar ${validos.length} lançamento(s) para ${formatMes(mes)}?\nTotal: ${totalTxt}${erros.length?`\n\n${erros.length} linha(s) ignorada(s) por formato inválido.`:''}`)) return;
+
+  const updates = {};
+  if(substituir){
+    const chaves = new Set(validos.map(i=>normKey(i.nome)));
+    Object.entries(saldos).forEach(([id,s])=>{
+      if(s && s.mes===mes && chaves.has(normKey(s.colaborador))) updates[id] = null;
+    });
+  }
+  const agora = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  validos.forEach(i=>{
+    const key = refSaldo.push().key;
+    updates[key] = { colaborador: i.nome, mes, horas: i.horas, obs, criadoEm: Date.now(), criadoEmTxt: agora };
+  });
+
+  refSaldo.update(updates)
+    .then(()=> showToast(`${validos.length} saldo(s) importado(s) — total ${totalTxt}.`))
+    .catch(()=> showToast('Erro ao importar. Verifique a conexão.'));
+  closeImport();
+}
+
+/* ================= HORAS EXTRAS — modais ================= */
+
 function openModal(id){
   editingId = id||null;
-  const r = editingId ? records[editingId] : null;
-  document.getElementById('modal-title').textContent = editingId ? 'Editar solicitação de horas extras' : 'Nova solicitação de horas extras';
-  document.getElementById('btn-save-record').textContent = editingId ? 'Salvar alterações' : 'Enviar solicitação';
-  document.getElementById('f-lider').value = r ? r.lider : '';
-  document.getElementById('f-colaborador').value = r ? r.colaborador : '';
-  document.getElementById('f-motivo').value = r ? r.motivo : '';
-  document.getElementById('f-data').value = r ? r.data : '';
-  document.getElementById('f-horas').value = r ? r.horas : '';
+  document.getElementById('modal-title').textContent = 'Nova solicitação de horas extras';
+  ['f-lider','f-colaborador','f-motivo','f-data','f-horas'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('modal').classList.add('open');
 }
 
-function closeModal(){ document.getElementById('modal').classList.remove('open'); editingId = null; }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 
 function saveRecord(){
-  const lider = normalizeName(document.getElementById('f-lider').value);
-  const colaborador = normalizeName(document.getElementById('f-colaborador').value);
+  const lider = document.getElementById('f-lider').value.trim();
+  const colaborador = nomeBonito(document.getElementById('f-colaborador').value);
   const motivo = document.getElementById('f-motivo').value.trim();
   const data = document.getElementById('f-data').value;
   const horas = document.getElementById('f-horas').value;
   if(!lider||!colaborador||!motivo||!data||!horas){ showToast('Preencha todos os campos!'); return; }
-
-  if(editingId){
-    refHoras.child(editingId).update({ lider, colaborador, motivo, data, horas: parseFloat(horas) });
-    showToast('Solicitação atualizada!');
-  } else {
-    const rec = { lider, colaborador, motivo, data, horas: parseFloat(horas), status:'Pendente', criadoEm: Date.now(), aprovadoPor: null, aprovadoEm: null };
-    refHoras.push(rec);
-    showToast('Solicitação enviada!');
-  }
+  const rec = { lider, colaborador, motivo, data, horas: parseFloat(horas), status:'Pendente', criadoEm: Date.now(), aprovadoPor: null, aprovadoEm: null };
+  refHoras.push(rec);
+  showToast('Solicitação enviada!');
   closeModal();
 }
 
@@ -442,7 +986,7 @@ function abrirAprov(id, acao){
   acaoAtual = acao;
   const r = records[id];
   document.getElementById('aprov-title').textContent = acao==='aprovar' ? '✅ Aprovar horas extras' : '❌ Negar horas extras';
-  document.getElementById('aprov-desc').textContent = `${r.colaborador} — ${r.horas}h em ${formatDate(r.data)} — Motivo: ${r.motivo}`;
+  document.getElementById('aprov-desc').textContent = `${r.colaborador} — ${fmtHM(r.horas)} em ${formatDate(r.data)} — Motivo: ${r.motivo}`;
   document.getElementById('f-aprovador').value = '';
   const btn = document.getElementById('btn-confirmar-aprov');
   btn.style.background = acao==='aprovar'?'#007e6a':'#a32d2d';
@@ -475,11 +1019,13 @@ function showToast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2500);
+  setTimeout(()=>t.classList.remove('show'), 2800);
 }
 
-document.getElementById('modal').addEventListener('click',e=>{ if(e.target===document.getElementById('modal')) closeModal(); });
-document.getElementById('modal-aprov').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-aprov')) closeAprov(); });
+['modal','modal-aprov','modal-comp','modal-saldo','modal-import'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
+});
 
 function updateClock(){
   const now = new Date();
