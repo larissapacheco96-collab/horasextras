@@ -117,6 +117,8 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .saldo-val span{font-size:11px;font-weight:400;color:#666;margin-left:3px}
 .saldo-break{margin-top:8px;padding-top:7px;border-top:1px dashed #dcdcd6;display:grid;grid-template-columns:1fr auto;gap:3px 8px;font-size:11px;color:#555}
 .saldo-break b{font-weight:600;color:#1a1a1a}
+.saldo-ref{margin-top:6px;padding-top:6px;border-top:1px dashed #e2e2dc;display:flex;justify-content:space-between;gap:6px;font-size:10.5px;color:#999}
+.saldo-ref b{font-weight:600;color:#888}
 .hint{font-size:11px;color:#888;margin-top:6px;line-height:1.5}
 .warn-box{background:#faeeda;border:1px solid #f0d9ae;color:#854f0b;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:1rem;display:none}
 .warn-box.show{display:block}
@@ -216,23 +218,24 @@ table.small{min-width:720px}
   <div class="view" id="view-comp">
 
     <div class="stats">
-      <div class="stat"><div class="stat-label">Saldo inicial lançado</div><div class="stat-val comp" id="c-saldoini">0h00</div></div>
-      <div class="stat"><div class="stat-label">Horas extras aprovadas</div><div class="stat-val aprov" id="c-aprovadas">0h00</div></div>
+      <div class="stat"><div class="stat-label">Saldo do Ponto (realizado)</div><div class="stat-val comp" id="c-saldoini">0h00</div></div>
       <div class="stat"><div class="stat-label">Total compensado</div><div class="stat-val pend" id="c-compensado">0h00</div></div>
       <div class="stat"><div class="stat-label">Saldo disponível</div><div class="stat-val aprov" id="c-saldo">0h00</div></div>
+      <div class="stat"><div class="stat-label">Aprovado (referência)</div><div class="stat-val" style="color:#888" id="c-aprovadas">0h00</div></div>
       <div class="stat"><div class="stat-label">Colaboradores</div><div class="stat-val" id="c-colabs">0</div></div>
     </div>
 
     <div class="saldo-section">
       <h2><i class="ti ti-wallet" style="color:#007e6a"></i> Saldo de horas por colaborador</h2>
       <div class="saldo-list" id="saldo-list"></div>
-      <p class="hint"><b>Saldo disponível</b> = saldo inicial (lançado a partir do Ponto) + horas extras aprovadas neste sistema − horas já compensadas.</p>
+      <p class="hint"><b>Saldo disponível = saldo do Ponto − horas já compensadas.</b> O saldo do Ponto é o que foi de fato trabalhado.
+      As horas aprovadas aparecem apenas como referência, para comparar o que foi liberado com o que foi realizado — elas não entram na conta.</p>
     </div>
 
     <div class="toolbar">
       <input type="text" id="comp-search" placeholder="Buscar por colaborador, motivo..." oninput="renderComp()">
       <button class="btn-add" onclick="openComp()"><i class="ti ti-minus"></i> Lançar compensação</button>
-      <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Saldo inicial / ajuste</button>
+      <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Lançar saldo do Ponto</button>
       <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos do Ponto</button>
       <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
     </div>
@@ -260,7 +263,7 @@ table.small{min-width:720px}
       </div>
     </div>
 
-    <div class="sub-title"><i class="ti ti-adjustments"></i> Saldos iniciais e ajustes manuais</div>
+    <div class="sub-title"><i class="ti ti-adjustments"></i> Saldos do Ponto e ajustes manuais</div>
     <div class="table-wrap">
       <table class="small">
         <thead>
@@ -387,8 +390,8 @@ table.small{min-width:720px}
 <!-- Modal saldo inicial / ajuste -->
 <div class="modal-bg" id="modal-saldo">
   <div class="modal">
-    <h2><i class="ti ti-adjustments" style="color:#007e6a"></i> Saldo inicial / ajuste manual</h2>
-    <p style="font-size:12px;color:#666;margin-bottom:1rem;line-height:1.5">Para lançar o saldo que veio do sistema de Ponto. Aceita formato <b>HH:MM</b> (ex: 09:24) ou decimal (ex: 9.4). Use sinal negativo para saldo devedor.</p>
+    <h2><i class="ti ti-adjustments" style="color:#007e6a"></i> Lançar saldo do Ponto</h2>
+    <p style="font-size:12px;color:#666;margin-bottom:1rem;line-height:1.5">Saldo apurado no sistema de Ponto — é ele que forma as horas disponíveis para compensar. Aceita formato <b>HH:MM</b> (ex: 09:24) ou decimal (ex: 9.4). Use sinal negativo para saldo devedor.</p>
     <div class="form-row">
       <label>Colaborador</label>
       <select id="sd-colaborador-sel" onchange="toggleOutro('sd-colaborador')"></select>
@@ -845,13 +848,15 @@ function calcularSaldos(){
   const get = (raw)=>{
     const nome = canonico(raw);
     if(!nome) return null;
-    if(!mapa[nome]) mapa[nome] = {nome, inicial:0, aprovadas:0, compensado:0};
+    if(!mapa[nome]) mapa[nome] = {nome, ponto:0, aprovadas:0, compensado:0};
     return mapa[nome];
   };
-  Object.values(saldos).forEach(s=>{ const o=s&&get(s.colaborador); if(o) o.inicial += parseFloat(s.horas||0); });
+  Object.values(saldos).forEach(s=>{ const o=s&&get(s.colaborador); if(o) o.ponto += parseFloat(s.horas||0); });
   Object.values(records).forEach(r=>{ if(r&&r.status==='Aprovado'){ const o=get(r.colaborador); if(o) o.aprovadas += parseFloat(r.horas||0); } });
   Object.values(comps).forEach(c=>{ const o=c&&get(c.colaborador); if(o) o.compensado += parseFloat(c.horas||0); });
-  Object.keys(mapa).forEach(k=>{ mapa[k].saldo = mapa[k].inicial + mapa[k].aprovadas - mapa[k].compensado; });
+  // Saldo disponível vem do que foi DE FATO trabalhado (Ponto), menos o que já foi compensado.
+  // As horas aprovadas são apenas referência e NÃO entram no saldo.
+  Object.keys(mapa).forEach(k=>{ mapa[k].saldo = mapa[k].ponto - mapa[k].compensado; });
   return mapa;
 }
 function saldoDe(nome){
@@ -880,15 +885,17 @@ function renderComp(){
         <div class="saldo-nome" title="${m.nome}">${m.nome}</div>
         <div class="saldo-val ${vcls}">${fmtHM(m.saldo)}<span>disponível</span></div>
         <div class="saldo-break">
-          <div>Saldo inicial</div><div style="text-align:right"><b>${fmtHM(m.inicial)}</b></div>
-          <div>Extras aprovadas</div><div style="text-align:right"><b>${fmtHM(m.aprovadas)}</b></div>
+          <div>Saldo do Ponto</div><div style="text-align:right"><b>${fmtHM(m.ponto)}</b></div>
           <div>Compensadas</div><div style="text-align:right"><b>${m.compensado>0?'−':''}${fmtHM(m.compensado)}</b></div>
+        </div>
+        <div class="saldo-ref">
+          <span>Aprovado (referência)</span><b>${fmtHM(m.aprovadas)}</b>
         </div>
       </div>`;
     }).join('');
   }
 
-  const tot = Object.values(mapa).reduce((a,m)=>({i:a.i+m.inicial,ap:a.ap+m.aprovadas,c:a.c+m.compensado,s:a.s+m.saldo}),{i:0,ap:0,c:0,s:0});
+  const tot = Object.values(mapa).reduce((a,m)=>({i:a.i+m.ponto,ap:a.ap+m.aprovadas,c:a.c+m.compensado,s:a.s+m.saldo}),{i:0,ap:0,c:0,s:0});
   document.getElementById('c-saldoini').textContent   = fmtHM(tot.i);
   document.getElementById('c-aprovadas').textContent  = fmtHM(tot.ap);
   document.getElementById('c-compensado').textContent = fmtHM(tot.c);
