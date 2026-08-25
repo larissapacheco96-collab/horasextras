@@ -136,6 +136,27 @@ td{padding:9px 10px;vertical-align:top;color:#1a1a1a;word-break:break-word;font-
 .sub-title{font-size:12px;font-weight:600;color:#555;margin:1.25rem 0 .5rem;display:flex;align-items:center;gap:6px}
 table.small{min-width:720px}
 .pre-list{font-family:Consolas,Menlo,monospace;font-size:11.5px;line-height:1.7;background:#f8f8f5;border:1px solid #e5e5e0;border-radius:8px;padding:10px 12px;max-height:300px;overflow-y:auto;white-space:pre-wrap}
+/* ── Calendário de compensações ── */
+.cal-wrap{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.cal-title{font-size:13px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:6px}
+.cal-nav{display:flex;align-items:center;gap:6px}
+.cal-nav button{background:#f5f5f2;border:1px solid #ddd;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:#555;transition:all .15s}
+.cal-nav button:hover{background:#e8e8e4}
+.cal-nav-month{font-size:13px;font-weight:600;min-width:120px;text-align:center;color:#1a1a1a}
+.cal-colab-filter{font-size:12px;padding:5px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-dow{font-size:10px;font-weight:700;text-align:center;color:#888;padding:4px 0;text-transform:uppercase}
+.cal-day{min-height:64px;border:1px solid #eee;border-radius:8px;padding:4px 5px;font-size:10px;background:#fafaf8;display:flex;flex-direction:column;gap:2px;position:relative}
+.cal-day.today{border-color:#007e6a;background:#f0faf7}
+.cal-day.other-month{opacity:.35}
+.cal-day-num{font-weight:700;font-size:11px;color:#555;margin-bottom:2px}
+.cal-day.today .cal-day-num{color:#007e6a}
+.cal-event{border-radius:4px;padding:2px 5px;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3}
+.cal-event:hover{opacity:.8}
+.cal-more{font-size:9px;color:#888;margin-top:1px;cursor:pointer}
+.cal-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:10px;align-items:center}
+.cal-legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -259,6 +280,29 @@ table.small{min-width:720px}
       <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Lançar saldo do Ponto</button>
       <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos do Ponto</button>
       <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
+    </div>
+
+    <div class="sub-title"><i class="ti ti-calendar-month"></i> Calendário de compensações</div>
+    <div class="cal-wrap">
+      <div class="cal-header">
+        <div class="cal-title"><i class="ti ti-calendar-event" style="color:#007e6a"></i> <span id="cal-month-label">—</span></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <select id="cal-time" class="cal-colab-filter" onchange="renderCal()">
+            <option value="">Todos os times</option>
+          </select>
+          <select id="cal-colab" class="cal-colab-filter" onchange="renderCal()">
+            <option value="">Todos os colaboradores</option>
+          </select>
+          <div class="cal-nav">
+            <button onclick="calMove(-1)" title="Mês anterior"><i class="ti ti-chevron-left"></i></button>
+            <span class="cal-nav-month" id="cal-nav-label">—</span>
+            <button onclick="calMove(1)" title="Próximo mês"><i class="ti ti-chevron-right"></i></button>
+            <button onclick="calToday()" title="Hoje" style="width:auto;padding:0 10px;font-size:11px;font-weight:600">Hoje</button>
+          </div>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend" id="cal-legend"></div>
     </div>
 
     <div class="sub-title"><i class="ti ti-clock-minus"></i> Compensações lançadas</div>
@@ -963,6 +1007,131 @@ function saldoDe(nome){
   return m[c] ? m[c].saldo : 0;
 }
 
+// ── CALENDÁRIO DE COMPENSAÇÕES ──────────────────────────────────────────────
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-based
+
+const CAL_PALETTE = [
+  '#2563eb','#16a34a','#dc2626','#9333ea','#ea580c',
+  '#0891b2','#65a30d','#db2777','#854d0e','#0f766e',
+  '#7c3aed','#b45309','#15803d','#c026d3','#1d4ed8'
+];
+let calColorMap = {}; // colaborador → cor
+
+function colabColor(nome){
+  const n = canonico(nome)||nome;
+  if(!calColorMap[n]){
+    const used = Object.values(calColorMap);
+    const free = CAL_PALETTE.filter(c=>!used.includes(c));
+    calColorMap[n] = free.length ? free[0] : CAL_PALETTE[Object.keys(calColorMap).length % CAL_PALETTE.length];
+  }
+  return calColorMap[n];
+}
+
+function calMove(d){ calMonth+=d; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCal(); }
+function calToday(){ const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); renderCal(); }
+
+function renderCal(){
+  const ym = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  const label = new Date(calYear,calMonth,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const labelCap = label.charAt(0).toUpperCase()+label.slice(1);
+  document.getElementById('cal-month-label').textContent = labelCap;
+  document.getElementById('cal-nav-label').textContent   = labelCap;
+
+  // --- filtro time ---
+  const selTime  = document.getElementById('cal-time');
+  const fTime    = selTime.value;
+  const timesNoMes = [...new Set(Object.values(comps).filter(c=>c&&c.data&&c.data.startsWith(ym)).map(c=>timeDe(c.colaborador)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const prevTime = selTime.value;
+  selTime.innerHTML = '<option value="">Todos os times</option>' +
+    TIMES.filter(t=>timesNoMes.includes(t)||t===prevTime).map(t=>`<option value="${t}" ${t===prevTime?'selected':''}>${t}</option>`).join('');
+  selTime.value = prevTime;
+
+  // --- filtro colaborador ---
+  const selColab = document.getElementById('cal-colab');
+  const fColab   = selColab.value;
+  const allColabs = [...new Set(
+    Object.values(comps)
+      .filter(c=>c&&c.data&&c.data.startsWith(ym)&&(!selTime.value||timeDe(c.colaborador)===selTime.value))
+      .map(c=>canonico(c.colaborador)).filter(Boolean)
+  )].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const prevColab = selColab.value;
+  selColab.innerHTML = '<option value="">Todos os colaboradores</option>' +
+    allColabs.map(n=>`<option value="${n}" ${n===prevColab?'selected':''}>${n}</option>`).join('');
+  selColab.value = prevColab;
+
+  // --- compensações do mês filtradas ---
+  const evts = Object.values(comps).filter(c=>{
+    if(!c||!c.data||!c.data.startsWith(ym)) return false;
+    if(fTime  && timeDe(c.colaborador)!==fTime)   return false;
+    if(fColab && canonico(c.colaborador)!==fColab) return false;
+    return true;
+  });
+
+  // agrupar por dia
+  const byDay = {};
+  evts.forEach(c=>{
+    const day = parseInt(c.data.split('-')[2],10);
+    if(!byDay[day]) byDay[day] = [];
+    byDay[day].push(c);
+  });
+
+  // grade
+  const firstDow    = new Date(calYear,calMonth,1).getDay();
+  const daysInMonth = new Date(calYear,calMonth+1,0).getDate();
+  const daysInPrev  = new Date(calYear,calMonth,0).getDate();
+  const todayStr    = new Date().toISOString().slice(0,10);
+  const DOWS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  let html = DOWS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+
+  // dias do mês anterior
+  for(let i=firstDow-1;i>=0;i--)
+    html += `<div class="cal-day other-month"><span class="cal-day-num">${daysInPrev-i}</span></div>`;
+
+  // dias do mês
+  for(let d=1;d<=daysInMonth;d++){
+    const ds    = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const items = (byDay[d]||[]).sort((a,b)=>canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR'));
+    const totalH = items.reduce((s,c)=>s+parseFloat(c.horas||0),0);
+
+    const evtHtml = items.map(c=>{
+      const col  = colabColor(c.colaborador);
+      const nm   = canonico(c.colaborador)||c.colaborador||'—';
+      const h    = fmtHM(parseFloat(c.horas||0));
+      const horS = c.horaIni ? ' ('+c.horaIni+'–'+(c.horaFim||'?')+')' : '';
+      const obsS = c.obs ? ' · '+c.obs : '';
+      const tip  = (nm+' — '+h+horS+obsS).replace(/"/g,'&quot;');
+      const time = timeDe(c.colaborador);
+      return `<div class="cal-event" style="background:${col}18;color:${col};border-left:3px solid ${col}" title="${tip}">
+        <span style="font-weight:700">${nm.split(' ')[0]}</span> <span style="opacity:.8">${h}</span>
+      </div>`;
+    }).join('');
+
+    const totalLine = items.length>1
+      ? `<div class="cal-more" style="font-weight:600;color:#555">= ${fmtHM(totalH)} no dia</div>` : '';
+
+    html += `<div class="cal-day${ds===todayStr?' today':''}">
+      <span class="cal-day-num">${d}</span>
+      ${evtHtml}${totalLine}
+    </div>`;
+  }
+
+  // completar última linha
+  const trailing = (firstDow+daysInMonth)%7;
+  for(let d=1;d<=(trailing?7-trailing:0);d++)
+    html += `<div class="cal-day other-month"><span class="cal-day-num">${d}</span></div>`;
+
+  document.getElementById('cal-grid').innerHTML = html;
+
+  // legenda
+  const colabsNoMes = [...new Set(evts.map(c=>canonico(c.colaborador)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  document.getElementById('cal-legend').innerHTML = colabsNoMes.length
+    ? colabsNoMes.map(n=>`<div style="display:flex;align-items:center;gap:4px"><div class="cal-legend-dot" style="background:${colabColor(n)}"></div><span style="font-size:10px">${n}</span></div>`).join('')
+    : '<span style="color:#aaa;font-size:11px">Nenhuma compensação neste mês.</span>';
+}
+// ── FIM CALENDÁRIO ───────────────────────────────────────────────────────────
+
 function mesesDisponiveis(){
   const set = new Set();
   Object.values(records).forEach(r=>{ const m=(r&&r.data||'').substring(0,7); if(m && parseInt(m.substring(0,4))>=2020) set.add(m); });
@@ -1043,6 +1212,8 @@ function renderComp(){
   document.getElementById('c-compensado').textContent = fmtHM(tot.c);
   document.getElementById('c-saldo').textContent      = fmtHM(tot.s);
   document.getElementById('c-colabs').textContent     = Object.values(mapa).filter(m=>noTime(m.nome)).length;
+
+  renderCal();
 
   const cl = Object.entries(comps).map(([id,c])=>({...c,id}))
     .filter(c=> noTime(c.colaborador) && (!q || chave(canonico(c.colaborador)+' '+(c.obs||'')).includes(q)))
