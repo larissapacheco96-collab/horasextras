@@ -274,12 +274,13 @@ table.small{min-width:720px}
       A linha "Aprovado" mostra o que foi liberado no mês selecionado acima, só para comparação — não entra na conta do saldo.</p>
     </div>
 
-    <div class="toolbar">
-      <input type="text" id="comp-search" placeholder="Buscar por colaborador, motivo..." oninput="renderComp()">
-      <button class="btn-add" onclick="openComp()"><i class="ti ti-minus"></i> Lançar compensação</button>
-      <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Lançar saldo do Ponto</button>
-      <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos do Ponto</button>
-      <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
+    <div class="toolbar" style="flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-add" onclick="openComp()"><i class="ti ti-minus"></i> Lançar compensação</button>
+        <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Lançar saldo do Ponto</button>
+        <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos</button>
+        <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
+      </div>
     </div>
 
     <div class="sub-title"><i class="ti ti-calendar-month"></i> Calendário de compensações</div>
@@ -305,7 +306,20 @@ table.small{min-width:720px}
       <div class="cal-legend" id="cal-legend"></div>
     </div>
 
-    <div class="sub-title"><i class="ti ti-clock-minus"></i> Compensações lançadas</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+      <span class="sub-title" style="margin:0"><i class="ti ti-clock-minus"></i> Compensações lançadas <span id="comp-count" style="font-size:11px;color:#888;font-weight:400;margin-left:6px"></span></span>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="text" id="comp-search" placeholder="🔍 Buscar colaborador..." oninput="renderComp()" style="font-size:12px;padding:6px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;width:180px">
+        <select id="comp-mes-filtro" onchange="renderComp()" title="Filtrar por mês" style="font-size:12px;padding:6px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">
+          <option value="">Todos os meses</option>
+        </select>
+        <select id="comp-sort" onchange="renderComp()" title="Ordenar por" style="font-size:12px;padding:6px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">
+          <option value="recente">⬇ Último lançado</option>
+          <option value="nome">A–Z Colaborador</option>
+          <option value="data">📅 Data compensação</option>
+        </select>
+      </div>
+    </div>
     <div class="table-wrap">
       <table class="small">
         <thead>
@@ -324,7 +338,7 @@ table.small{min-width:720px}
       </table>
       <div id="comp-empty" class="empty" style="display:none">
         <i class="ti ti-clock-off" style="font-size:28px;display:block;margin-bottom:8px"></i>
-        Nenhuma compensação lançada.
+        Nenhuma compensação lançada para os filtros selecionados.
       </div>
     </div>
 
@@ -1038,14 +1052,13 @@ function renderCal(){
   document.getElementById('cal-month-label').textContent = labelCap;
   document.getElementById('cal-nav-label').textContent   = labelCap;
 
-  // --- filtro time ---
+  // --- filtro time: sempre mostra todos os times (não só os com eventos no mês) ---
   const selTime  = document.getElementById('cal-time');
-  const fTime    = selTime.value;
-  const timesNoMes = [...new Set(Object.values(comps).filter(c=>c&&c.data&&c.data.startsWith(ym)).map(c=>timeDe(c.colaborador)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   const prevTime = selTime.value;
   selTime.innerHTML = '<option value="">Todos os times</option>' +
-    TIMES.filter(t=>timesNoMes.includes(t)||t===prevTime).map(t=>`<option value="${t}" ${t===prevTime?'selected':''}>${t}</option>`).join('');
+    TIMES.filter(t=>t!=='Sem time').map(t=>`<option value="${t}" ${t===prevTime?'selected':''}>${t}</option>`).join('');
   selTime.value = prevTime;
+  const fTime = selTime.value;
 
   // --- filtro colaborador ---
   const selColab = document.getElementById('cal-colab');
@@ -1215,17 +1228,37 @@ function renderComp(){
 
   renderCal();
 
+  // --- filtro de mês e ordenação da tabela de compensações ---
+  const selMesFiltro = document.getElementById('comp-mes-filtro');
+  const mesesComp = [...new Set(Object.values(comps).map(c=>c&&c.data?(c.data||'').substring(0,7):'').filter(Boolean))].sort().reverse();
+  const prevMesFiltro = selMesFiltro.value;
+  selMesFiltro.innerHTML = '<option value="">Todos os meses</option>' +
+    mesesComp.map(m=>`<option value="${m}" ${m===prevMesFiltro?'selected':''}>${formatMes(m)}</option>`).join('');
+  selMesFiltro.value = prevMesFiltro;
+  const mesFiltroVal = selMesFiltro.value;
+
+  const sortVal = document.getElementById('comp-sort').value || 'recente';
+
   const cl = Object.entries(comps).map(([id,c])=>({...c,id}))
-    .filter(c=> noTime(c.colaborador) && (!q || chave(canonico(c.colaborador)+' '+(c.obs||'')).includes(q)))
-    // colaborador em ordem alfabética; dentro de cada um, por data (mais antiga primeiro)
-    .sort((a,b)=> canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR')
-               || (a.data||'').localeCompare(b.data||'')
-               || (a.horaIni||'').localeCompare(b.horaIni||''));
+    .filter(c=> noTime(c.colaborador) && (!q || chave(canonico(c.colaborador)+' '+(c.obs||'')).includes(q))
+             && (!mesFiltroVal || (c.data||'').startsWith(mesFiltroVal)))
+    .sort((a,b)=>{
+      if(sortVal==='recente') return (b.criadoEm||0) - (a.criadoEm||0);
+      if(sortVal==='nome')    return canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR')
+                                  || (a.data||'').localeCompare(b.data||'');
+      if(sortVal==='data')    return (b.data||'').localeCompare(a.data||'')
+                                  || canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR');
+      return 0;
+    });
   const ctb = document.getElementById('comp-tbody');
+  const countEl = document.getElementById('comp-count');
   if(!cl.length){
     ctb.innerHTML=''; document.getElementById('comp-empty').style.display='block';
+    if(countEl) countEl.textContent='';
   } else {
     document.getElementById('comp-empty').style.display='none';
+    const totalCompH = cl.reduce((s,c)=>s+parseFloat(c.horas||0),0);
+    if(countEl) countEl.textContent = `${cl.length} registro${cl.length>1?'s':''} · ${fmtHM(totalCompH)} compensadas`;
     ctb.innerHTML = cl.map((c,i)=>`
       <tr>
         <td style="color:#999;font-size:11px">${i+1}</td>
