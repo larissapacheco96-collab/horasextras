@@ -183,14 +183,21 @@ table.small{min-width:720px}
   <!-- ================= VIEW: HORAS EXTRAS ================= -->
   <div class="view active" id="view-horas">
 
-    <div class="toolbar" style="margin-bottom:1.25rem">
+    <div class="toolbar" style="margin-bottom:1.25rem;flex-wrap:wrap;gap:8px">
       <label style="font-size:12px;color:#555;font-weight:500">Período:</label>
-      <select id="mes-filtro" onchange="renderTable()">
+      <select id="mes-filtro" onchange="onMesFiltroChange()" style="min-width:130px">
         <option value="todos">Todos os meses</option>
       </select>
-      <label style="font-size:12px;color:#555;font-weight:500;margin-left:8px">Time:</label>
+      <label style="font-size:12px;color:#555;font-weight:500;margin-left:4px">Time:</label>
       <select id="time-filtro" onchange="renderTable()"></select>
-      <span id="mes-label" style="font-size:11px;color:#888"></span>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap">
+        <label style="font-size:12px;color:#555;font-weight:500">📅 Data específica:</label>
+        <input type="date" id="data-de" onchange="onDataFiltroChange()" title="De" style="font-size:12px;padding:6px 8px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer">
+        <span style="font-size:12px;color:#888">até</span>
+        <input type="date" id="data-ate" onchange="onDataFiltroChange()" title="Até" style="font-size:12px;padding:6px 8px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer">
+        <button onclick="limparFiltroData()" title="Limpar datas" style="font-size:11px;padding:5px 10px;border:1px solid #ccc;border-radius:8px;background:#f5f5f2;color:#555;cursor:pointer;font-family:inherit">✕ Limpar</button>
+      </div>
+      <span id="mes-label" style="font-size:11px;color:#888;width:100%;margin-top:2px"></span>
     </div>
 
     <div class="stats">
@@ -873,6 +880,25 @@ function celulaNome(n){
 }
 
 /* ================= HORAS EXTRAS ================= */
+function onMesFiltroChange(){
+  // Ao selecionar mês, limpa datas específicas
+  document.getElementById('data-de').value  = '';
+  document.getElementById('data-ate').value = '';
+  renderTable();
+}
+function onDataFiltroChange(){
+  // Ao preencher data específica, limpa filtro de mês
+  const de  = document.getElementById('data-de').value;
+  const ate = document.getElementById('data-ate').value;
+  if(de || ate) document.getElementById('mes-filtro').value = 'todos';
+  renderTable();
+}
+function limparFiltroData(){
+  document.getElementById('data-de').value  = '';
+  document.getElementById('data-ate').value = '';
+  renderTable();
+}
+
 function renderTable(){
   const all = Object.entries(records).map(([id,r])=>({...r,id}));
 
@@ -890,14 +916,33 @@ function renderTable(){
   selTime.value = timeAtual;
   const timeSel = selTime.value;
 
-  document.getElementById('mes-label').textContent =
-    (mesSel==='todos' ? 'todos os lançamentos' : 'lançamentos de '+formatMes(mesSel)) +
-    (timeSel==='todos' ? '' : ' — '+timeSel);
+  // Filtro de data específica
+  const dataDe  = document.getElementById('data-de').value;  // 'YYYY-MM-DD' ou ''
+  const dataAte = document.getElementById('data-ate').value;
+  const usandoDataEspecifica = dataDe || dataAte;
 
-  const noMes = all.filter(r=>
-    (mesSel==='todos' || (r.data||'').startsWith(mesSel)) &&
-    (timeSel==='todos' || timeDe(r.colaborador)===timeSel)
-  );
+  // Rótulo descritivo
+  let labelTxt = '';
+  if(usandoDataEspecifica){
+    const fmt = d => d ? d.split('-').reverse().join('/') : '?';
+    labelTxt = `Data: ${dataDe?fmt(dataDe):'início'} até ${dataAte?fmt(dataAte):'hoje'}`;
+  } else {
+    labelTxt = (mesSel==='todos' ? 'todos os lançamentos' : 'lançamentos de '+formatMes(mesSel)) +
+               (timeSel==='todos' ? '' : ' — '+timeSel);
+  }
+  document.getElementById('mes-label').textContent = labelTxt;
+
+  const noMes = all.filter(r=>{
+    const d = r.data || '';
+    if(usandoDataEspecifica){
+      if(dataDe  && d < dataDe)  return false;
+      if(dataAte && d > dataAte) return false;
+    } else {
+      if(mesSel!=='todos' && !d.startsWith(mesSel)) return false;
+    }
+    if(timeSel!=='todos' && timeDe(r.colaborador)!==timeSel) return false;
+    return true;
+  });
 
   document.getElementById('s-total').textContent = noMes.length;
   document.getElementById('s-pend').textContent  = noMes.filter(r=>r.status==='Pendente').length;
