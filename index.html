@@ -287,6 +287,7 @@ table.small{min-width:720px}
         <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Lançar saldo do Ponto</button>
         <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos</button>
         <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
+        <button class="btn-alt" onclick="confirmarZerarSaldos()" style="color:#b91c1c;border-color:#fca5a5"><i class="ti ti-trash"></i> Zerar saldos</button>
       </div>
     </div>
 
@@ -639,10 +640,16 @@ const APELIDOS = {
   "joao vitor":"João Vitor Fini",
   "joao vitor fini":"João Vitor Fini",
   "kelle":"Kelle Garcia Assunção",
+  "kelle g":"Kelle Garcia Assunção",
+  "kelle g.":"Kelle Garcia Assunção",
+  "kelle g assuncao":"Kelle Garcia Assunção",
+  "kelle g. assuncao":"Kelle Garcia Assunção",
   "kelle garcia assuncao":"Kelle Garcia Assunção",
   "lara":"Lara Rayne Rodrigues de Souza",
+  "lara souza":"Lara Rayne Rodrigues de Souza",
   "lara rayne":"Lara Rayne Rodrigues de Souza",
   "laha rayne rodrigues de souza":"Lara Rayne Rodrigues de Souza",
+  "lara rayne rodrigues de souza":"Lara Rayne Rodrigues de Souza",
   // "Larissa" sozinho = Larissa Bernardes (colaboradora).
   // Larissa Pacheco é a aprovadora e nunca aparece como solicitante.
   "larissa":"Larissa Bernardes de Oliveira",
@@ -655,8 +662,10 @@ const APELIDOS = {
   "lauryanna":"Lauryana Abadia Silva Bastos",
   "luciana":"Luciana da Costa Santana",
   "maria luiza":"Maria Luiza Mendes Pereira",
+  "rose":"Rose",
   "rosileide":"Maria Rosileide Santos da Silva Arruda",
   "maria rosileide":"Maria Rosileide Santos da Silva Arruda",
+  "maria rosileide santos da silva arruda":"Maria Rosileide Santos da Silva Arruda",
   "marizete":"Marizete Borges Ribeiro",
   "mercia":"Mercia Thais Silva Ferreira",
   "mercia thais":"Mercia Thais Silva Ferreira",
@@ -675,7 +684,6 @@ const EQUIPES = {
   // Time Guilherme
   "Guilherme Ribeiro":                       {time:"Time Guilherme", cargo:"Líder"},
   "Lauryana Abadia Silva Bastos":            {time:"Time Guilherme", cargo:"Auxiliar"},
-  "Maria Rosileide Santos da Silva Arruda":  {time:"Time Guilherme", cargo:"Assistente"},
   "Maria Luiza Mendes Pereira":              {time:"Time Guilherme", cargo:"Auxiliar"},
   "João Vitor Fini":                         {time:"Time Guilherme", cargo:"Assistente"},
   // Time Fernanda
@@ -703,7 +711,9 @@ const EQUIPES = {
   "Ana Laura Tavares de Oliveira":           {time:"Time Gabryel", cargo:"Assistente"},
   "Gaspar dos Reis Cardoso Junior":          {time:"Time Gabryel", cargo:"Auxiliar"},
   "Estela Moreno de Paula":                  {time:"Time Gabryel", cargo:"Estagiária"},
-  "Douglas Barbosa da Silva":                {time:"Time Gabryel", cargo:"Assistente"}
+  "Douglas Barbosa da Silva":                {time:"Time Gabryel", cargo:"Assistente"},
+  // Sem time
+  "Rose":                                    {time:"Sem time", cargo:""},
 };
 
 // Saldos do Ponto — fechamento de julho/2026
@@ -1642,7 +1652,25 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
-['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr'].forEach(id=>{
+/* ===== Zerar saldos ===== */
+function confirmarZerarSaldos(){
+  document.getElementById('input-zerar').value = '';
+  document.getElementById('btn-confirm-zerar').disabled = true;
+  document.getElementById('modal-zerar').classList.add('open');
+}
+function fecharZerar(){
+  document.getElementById('modal-zerar').classList.remove('open');
+}
+function executarZerar(){
+  refSaldo.remove().then(()=>{
+    fecharZerar();
+    showToast('Saldos zerados com sucesso!');
+  }).catch(err=>{
+    showToast('Erro ao zerar: ' + err.message);
+  });
+}
+
+['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr','modal-zerar'].forEach(id=>{
   const el = document.getElementById(id);
   el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
 });
@@ -1656,5 +1684,22 @@ function updateClock(){
 updateClock();
 setInterval(updateClock,1000);
 </script>
+<!-- MODAL ZERAR SALDOS -->
+<div class="modal-bg" id="modal-zerar">
+  <div class="modal-box" style="max-width:420px">
+    <h2 style="color:#b91c1c"><i class="ti ti-alert-triangle" style="color:#b91c1c"></i> Zerar saldos</h2>
+    <p style="margin:12px 0;font-size:13px;color:#555;line-height:1.6">
+      Esta ação irá excluir <strong>todos os saldos do Ponto</strong> cadastrados no banco.<br>
+      Os registros de horas extras aprovadas e compensações <strong>não</strong> serão apagados.<br><br>
+      Digite <strong>ZERAR</strong> abaixo para confirmar:
+    </p>
+    <input id="input-zerar" class="input-full" placeholder="Digite ZERAR para confirmar" oninput="document.getElementById('btn-confirm-zerar').disabled=this.value!=='ZERAR'" style="margin-bottom:12px">
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="fecharZerar()">Cancelar</button>
+      <button class="btn-save" id="btn-confirm-zerar" disabled onclick="executarZerar()" style="background:#b91c1c;border-color:#b91c1c">Zerar saldos</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
