@@ -1652,22 +1652,63 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
-/* ===== Zerar saldos ===== */
+/* ===== Zerar dados por pessoa ===== */
 function confirmarZerarSaldos(){
+  // popular select com colaboradores únicos
+  const nomes = new Set();
+  Object.values(records).forEach(r=>{ if(r&&r.colaborador) nomes.add(canonico(r.colaborador)); });
+  Object.values(comps).forEach(c=>{   if(c&&c.colaborador) nomes.add(canonico(c.colaborador)); });
+  Object.values(saldos).forEach(s=>{  if(s&&s.colaborador) nomes.add(canonico(s.colaborador)); });
+  const sel = document.getElementById('zerar-colab');
+  sel.innerHTML = '<option value="__todos__">— Todos os colaboradores —</option>' +
+    [...nomes].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(n=>`<option value="${n}">${n}</option>`).join('');
   document.getElementById('input-zerar').value = '';
   document.getElementById('btn-confirm-zerar').disabled = true;
+  document.getElementById('z-saldo').checked = true;
+  document.getElementById('z-comp').checked  = false;
+  document.getElementById('z-horas').checked = false;
   document.getElementById('modal-zerar').classList.add('open');
 }
-function fecharZerar(){
-  document.getElementById('modal-zerar').classList.remove('open');
+function fecharZerar(){ document.getElementById('modal-zerar').classList.remove('open'); }
+function validarBotaoZerar(){
+  const ok = document.getElementById('input-zerar').value === 'ZERAR';
+  document.getElementById('btn-confirm-zerar').disabled = !ok;
 }
 function executarZerar(){
-  refSaldo.remove().then(()=>{
+  const colab  = document.getElementById('zerar-colab').value;
+  const zSaldo = document.getElementById('z-saldo').checked;
+  const zComp  = document.getElementById('z-comp').checked;
+  const zHoras = document.getElementById('z-horas').checked;
+  if(!zSaldo && !zComp && !zHoras){ showToast('Selecione ao menos um item para zerar.'); return; }
+
+  const todos = colab === '__todos__';
+  const match = (nome) => todos || canonico(nome) === colab;
+  const ps = [];
+
+  if(zSaldo){
+    if(todos){ ps.push(refSaldo.remove()); }
+    else {
+      Object.entries(saldos).forEach(([id,s])=>{ if(s && match(s.colaborador)) ps.push(refSaldo.child(id).remove()); });
+    }
+  }
+  if(zComp){
+    if(todos){ ps.push(refComp.remove()); }
+    else {
+      Object.entries(comps).forEach(([id,c])=>{ if(c && match(c.colaborador)) ps.push(refComp.child(id).remove()); });
+    }
+  }
+  if(zHoras){
+    if(todos){ ps.push(refHoras.remove()); }
+    else {
+      Object.entries(records).forEach(([id,r])=>{ if(r && match(r.colaborador)) ps.push(refHoras.child(id).remove()); });
+    }
+  }
+
+  Promise.all(ps).then(()=>{
     fecharZerar();
-    showToast('Saldos zerados com sucesso!');
-  }).catch(err=>{
-    showToast('Erro ao zerar: ' + err.message);
-  });
+    const quem = todos ? 'todos os colaboradores' : colab;
+    showToast(`Dados zerados para: ${quem}`);
+  }).catch(err=>showToast('Erro: ' + err.message));
 }
 
 ['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr','modal-zerar'].forEach(id=>{
@@ -1686,20 +1727,50 @@ setInterval(updateClock,1000);
 </script>
 <!-- MODAL ZERAR SALDOS -->
 <div class="modal-bg" id="modal-zerar">
-  <div class="modal-box" style="max-width:420px">
-    <h2 style="color:#b91c1c"><i class="ti ti-alert-triangle" style="color:#b91c1c"></i> Zerar saldos</h2>
-    <p style="margin:12px 0;font-size:13px;color:#555;line-height:1.6">
-      Esta ação irá excluir <strong>todos os saldos do Ponto</strong> cadastrados no banco.<br>
-      Os registros de horas extras aprovadas e compensações <strong>não</strong> serão apagados.<br><br>
-      Digite <strong>ZERAR</strong> abaixo para confirmar:
-    </p>
-    <input id="input-zerar" class="input-full" placeholder="Digite ZERAR para confirmar" oninput="document.getElementById('btn-confirm-zerar').disabled=this.value!=='ZERAR'" style="margin-bottom:12px">
+  <div class="modal-box" style="max-width:520px">
+    <h2 style="color:#b91c1c;display:flex;align-items:center;gap:8px"><i class="ti ti-trash"></i> Zerar dados</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:14px">Selecione quem e o que deseja zerar. Esta ação não pode ser desfeita.</p>
+
+    <!-- Quem -->
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:6px">Colaborador</label>
+      <select id="zerar-colab" class="input-full" style="font-size:13px;padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:#fff">
+        <option value="__todos__">— Todos os colaboradores —</option>
+      </select>
+    </div>
+
+    <!-- O que zerar -->
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:8px">O que zerar</label>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="z-saldo" checked style="width:15px;height:15px;accent-color:#b91c1c">
+          Saldo do Ponto
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="z-comp" style="width:15px;height:15px;accent-color:#b91c1c">
+          Compensações lançadas
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="z-horas" style="width:15px;height:15px;accent-color:#b91c1c">
+          Horas extras aprovadas
+        </label>
+      </div>
+    </div>
+
+    <!-- Confirmação -->
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;margin-bottom:14px">
+      <p style="font-size:12px;color:#7f1d1d">Digite <strong>ZERAR</strong> para confirmar:</p>
+      <input id="input-zerar" class="input-full" placeholder="ZERAR" oninput="validarBotaoZerar()" style="margin-top:6px">
+    </div>
+
     <div class="modal-footer">
       <button class="btn-cancel" onclick="fecharZerar()">Cancelar</button>
-      <button class="btn-save" id="btn-confirm-zerar" disabled onclick="executarZerar()" style="background:#b91c1c;border-color:#b91c1c">Zerar saldos</button>
+      <button class="btn-save" id="btn-confirm-zerar" disabled onclick="executarZerar()" style="background:#b91c1c;border-color:#b91c1c">
+        <i class="ti ti-trash"></i> Confirmar
+      </button>
     </div>
   </div>
 </div>
-
 </body>
 </html>
