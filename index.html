@@ -287,7 +287,8 @@ table.small{min-width:720px}
         <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Lançar saldo do Ponto</button>
         <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos</button>
         <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
-        <button class="btn-alt" onclick="confirmarZerarSaldos()" style="color:#b91c1c;border-color:#fca5a5"><i class="ti ti-trash"></i> Zerar saldos</button>
+        <button class="btn-alt" onclick="openGerenciarColabs()"><i class="ti ti-users"></i> Colaboradores</button>
+        <button class="btn-alt" onclick="confirmarZerarSaldos()" style="color:#b91c1c;border-color:#fca5a5"><i class="ti ti-trash"></i> Zerar dados</button>
       </div>
     </div>
 
@@ -572,9 +573,10 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const refHoras = db.ref('horasextras');
-const refComp  = db.ref('compensacoes');
-const refSaldo = db.ref('saldoinicial');
+const refHoras  = db.ref('horasextras');
+const refComp   = db.ref('compensacoes');
+const refSaldo  = db.ref('saldoinicial');
+const refColabs = db.ref('colaboradores');
 
 /* ===================================================================
    CADASTRO ÚNICO DE COLABORADORES
@@ -749,6 +751,7 @@ WELLINGTON RODRIGUES ; 13:54`;
 let records = {};
 let comps = {};
 let saldos = {};
+let colabsDinamicos = [...COLABORADORES]; // sobrescrito pelo Firebase ao carregar
 let filtroAtivo = 'todos';
 let acaoAtual = null;
 let idAtual = null;
@@ -767,6 +770,23 @@ refHoras.on('value', snap => { records = snap.val() || {}; renderTable(); render
 refComp.on('value',  snap => { comps   = snap.val() || {}; renderTable(); renderComp(); });
 refSaldo.on('value', snap => { saldos  = snap.val() || {}; renderComp(); });
 
+// Colaboradores dinâmicos — migra lista hardcoded na primeira vez
+refColabs.once('value', snap => {
+  if (!snap.val()) {
+    // Primeira carga: migrar COLABORADORES para o banco
+    const updates = {};
+    COLABORADORES.forEach(nome => { updates[btoa(encodeURIComponent(nome)).replace(/=/g,'')] = nome; });
+    refColabs.set(updates);
+  }
+});
+refColabs.on('value', snap => {
+  const data = snap.val() || {};
+  colabsDinamicos = Object.values(data).sort((a,b) => a.localeCompare(b,'pt-BR'));
+  renderTable(); renderComp();
+  // se o modal estiver aberto, atualizar a lista
+  if(document.getElementById('modal-colabs').classList.contains('open')) renderListaColabs();
+});
+
 /* ===== Nomes ===== */
 function semAcento(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 function chave(s){ return semAcento(s).toLowerCase().trim().replace(/\s+/g,' '); }
@@ -784,9 +804,10 @@ function canonico(nome){
   const k = chave(nome);
   if(!k) return '';
   if(APELIDOS[k]) return APELIDOS[k];
-  const exato = COLABORADORES.concat(OUTRAS_PESSOAS).find(c=>chave(c)===k);
+  const lista = colabsDinamicos.concat(OUTRAS_PESSOAS);
+  const exato = lista.find(c=>chave(c)===k);
   if(exato) return exato;
-  const pref = COLABORADORES.filter(c=> chave(c).startsWith(k+' '));
+  const pref = colabsDinamicos.filter(c=> chave(c).startsWith(k+' '));
   if(pref.length===1) return pref[0];
   return nomeBonito(nome);
 }
@@ -811,7 +832,7 @@ function todosOsNomes(){
     ...Object.values(comps).map(c=>c&&c.colaborador),
     ...Object.values(saldos).map(s=>s&&s.colaborador)
   ].filter(Boolean).map(canonico))];
-  const base = COLABORADORES.concat(OUTRAS_PESSOAS);
+  const base = colabsDinamicos.concat(OUTRAS_PESSOAS);
   const fora = extras.filter(n=>!base.some(b=>chave(b)===chave(n))).sort();
   return {base: base.slice().sort((a,b)=>a.localeCompare(b,'pt-BR')), fora};
 }
@@ -1599,7 +1620,7 @@ function openModal(){
   ['f-motivo','f-data','f-horas'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('modal').classList.add('open');
 }
-function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function closeModal(id){ document.getElementById(id||'modal').classList.remove('open'); }
 
 function saveRecord(){
   const lider = valorNome('f-lider');
@@ -1651,6 +1672,52 @@ function showToast(msg){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
+
+/* ===== Gerenciar colaboradores ===== */
+function colabKey(nome){ return btoa(encodeURIComponent(nome)).replace(/=/g,''); }
+
+function openGerenciarColabs(){
+  renderListaColabs();
+  document.getElementById('colab-novo').value = '';
+  document.getElementById('modal-colabs').classList.add('open');
+}
+
+function renderListaColabs(){
+  const lista = document.getElementById('colab-lista');
+  const count = document.getElementById('colab-count');
+  const nomes = [...colabsDinamicos].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  count.textContent = nomes.length;
+  lista.innerHTML = nomes.map(nome => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f0efe9;font-size:13px">
+      <span>${nome}</span>
+      <button onclick="removerColab('${nome.replace(/'/g,"\\'")}',this)" title="Remover"
+        style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px 6px;border-radius:4px;display:flex;align-items:center"
+        onmouseover="this.style.color='#b91c1c';this.style.background='#fef2f2'"
+        onmouseout="this.style.color='#ccc';this.style.background='none'">
+        <i class="ti ti-trash"></i>
+      </button>
+    </div>`).join('') || '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">Nenhum colaborador cadastrado.</div>';
+}
+
+function adicionarColab(){
+  const inp = document.getElementById('colab-novo');
+  const nome = (inp.value||'').trim();
+  if(!nome){ showToast('Digite o nome completo.'); return; }
+  if(colabsDinamicos.some(n=>chave(n)===chave(nome))){ showToast('Colaborador já cadastrado.'); return; }
+  refColabs.child(colabKey(nome)).set(nome).then(()=>{
+    inp.value=''; showToast(`"${nome}" adicionado.`);
+  }).catch(err=>showToast('Erro: '+err.message));
+}
+
+function removerColab(nome, btn){
+  if(!confirm(`Remover "${nome}" da lista de colaboradores?\n\nOs registros históricos dele(a) serão mantidos no banco.`)) return;
+  refColabs.child(colabKey(nome)).remove().then(()=>{
+    showToast(`"${nome}" removido.`);
+  }).catch(err=>showToast('Erro: '+err.message));
+}
+
+// Atualizar lista quando colabsDinamicos mudar
+const _origRefColabsOn = refColabs.on.bind(refColabs);
 
 /* ===== Zerar dados por pessoa ===== */
 function confirmarZerarSaldos(){
@@ -1711,7 +1778,7 @@ function executarZerar(){
   }).catch(err=>showToast('Erro: ' + err.message));
 }
 
-['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr','modal-zerar'].forEach(id=>{
+['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr','modal-zerar','modal-colabs'].forEach(id=>{
   const el = document.getElementById(id);
   el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
 });
@@ -1725,7 +1792,30 @@ function updateClock(){
 updateClock();
 setInterval(updateClock,1000);
 </script>
-<!-- MODAL ZERAR SALDOS -->
+<!-- MODAL COLABORADORES -->
+<div class="modal-bg" id="modal-colabs">
+  <div class="modal-box" style="max-width:480px">
+    <h2><i class="ti ti-users" style="color:#007e6a"></i> Gerenciar colaboradores</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:14px">Adicione ou remova colaboradores da ferramenta.</p>
+
+    <!-- Adicionar -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input id="colab-novo" class="input-full" placeholder="Nome completo do colaborador..." style="flex:1" onkeydown="if(event.key==='Enter') adicionarColab()">
+      <button class="btn-save" onclick="adicionarColab()" style="white-space:nowrap;padding:8px 14px"><i class="ti ti-plus"></i> Adicionar</button>
+    </div>
+
+    <!-- Lista atual -->
+    <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">
+      Colaboradores ativos (<span id="colab-count">0</span>)
+    </div>
+    <div id="colab-lista" style="max-height:340px;overflow-y:auto;border:1px solid #e4e2dc;border-radius:8px"></div>
+
+    <div class="modal-footer" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeModal('modal-colabs')">Fechar</button>
+    </div>
+  </div>
+</div>
+</body>
 <div class="modal-bg" id="modal-zerar">
   <div class="modal-box" style="max-width:520px">
     <h2 style="color:#b91c1c;display:flex;align-items:center;gap:8px"><i class="ti ti-trash"></i> Zerar dados</h2>
