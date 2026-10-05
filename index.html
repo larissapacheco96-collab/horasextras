@@ -178,6 +178,7 @@ table.small{min-width:720px}
   <div class="main-tabs">
     <button class="mtab active" id="mtab-horas" onclick="setView('horas')"><i class="ti ti-clock-plus"></i> Horas extras</button>
     <button class="mtab" id="mtab-comp" onclick="setView('comp')"><i class="ti ti-clock-minus"></i> Compensação de horas</button>
+    <button class="mtab" id="mtab-dayoff" onclick="setView('dayoff')"><i class="ti ti-beach"></i> Day off</button>
   </div>
 
   <!-- ================= VIEW: HORAS EXTRAS ================= -->
@@ -284,6 +285,7 @@ table.small{min-width:720px}
     <div class="toolbar" style="flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn-add" onclick="openComp()"><i class="ti ti-minus"></i> Lançar compensação</button>
+      <button class="btn-alt" onclick="openTransp()"><i class="ti ti-transfer"></i> Transportar saldo</button>
         <button class="btn-alt" onclick="openSaldo()"><i class="ti ti-adjustments"></i> Lançar saldo do Ponto</button>
         <button class="btn-alt" onclick="openImport()"><i class="ti ti-file-import"></i> Importar saldos</button>
         <button class="btn-alt" onclick="openPadronizar()"><i class="ti ti-wand"></i> Padronizar nomes</button>
@@ -375,6 +377,56 @@ table.small{min-width:720px}
   </div>
 </div>
 
+<!-- ================= VIEW: DAY OFF ================= -->
+<div class="view" id="view-dayoff">
+
+  <div class="toolbar" style="flex-wrap:wrap;gap:8px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-add" onclick="openDayOff()"><i class="ti ti-beach"></i> Lançar day off</button>
+    </div>
+  </div>
+
+  <!-- calendário day off -->
+  <div class="cal-wrap">
+    <div class="cal-header">
+      <div class="cal-title"><i class="ti ti-calendar-event" style="color:#9333ea"></i> <span id="cal-do-month-label">—</span></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <select id="cal-do-colab" class="cal-colab-filter" onchange="renderCalDayOff()">
+          <option value="">Todos os colaboradores</option>
+        </select>
+        <div class="cal-nav">
+          <button onclick="calDoMove(-1)"><i class="ti ti-chevron-left"></i></button>
+          <span class="cal-nav-month" id="cal-do-nav-label">—</span>
+          <button onclick="calDoMove(1)"><i class="ti ti-chevron-right"></i></button>
+          <button onclick="calDoToday()" style="width:auto;padding:0 10px;font-size:11px;font-weight:600">Hoje</button>
+        </div>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-do-grid"></div>
+    <div class="cal-legend" id="cal-do-legend"></div>
+  </div>
+
+  <!-- tabela day offs -->
+  <div class="sub-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+    <span><i class="ti ti-beach"></i> Day offs lançados</span>
+    <span id="dayoff-count" style="font-size:11px;color:#888;font-weight:400"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="small">
+      <thead>
+        <tr>
+          <th>#</th><th>Colaborador</th><th>Data</th><th>Observação</th><th>Lançado em</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="dayoff-tbody"></tbody>
+    </table>
+    <div id="dayoff-empty" class="empty" style="display:none">
+      <i class="ti ti-beach" style="font-size:28px;display:block;margin-bottom:8px"></i>
+      Nenhum day off lançado.
+    </div>
+  </div>
+</div>
+
 <!-- Modal nova solicitação -->
 <div class="modal-bg" id="modal">
   <div class="modal">
@@ -408,6 +460,103 @@ table.small{min-width:720px}
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-save" onclick="saveRecord()">Enviar solicitação</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal day off -->
+<div class="modal-bg" id="modal-dayoff">
+  <div class="modal" style="max-width:400px">
+    <h2><i class="ti ti-beach" style="color:#9333ea"></i> Lançar day off</h2>
+    <div class="form-row">
+      <label>Colaborador</label>
+      <select id="do-colaborador-sel" onchange="toggleOutro('do-colaborador')"></select>
+      <input class="outro" type="text" id="do-colaborador-outro" style="display:none" placeholder="Nome completo">
+    </div>
+    <div class="form-row">
+      <label>Data</label>
+      <input type="date" id="do-data">
+    </div>
+    <div class="form-row">
+      <label>Observação (opcional)</label>
+      <textarea id="do-obs" rows="2" placeholder="Ex: acordo, compensação de feriado..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDayOff()">Cancelar</button>
+      <button class="btn-save" style="background:#9333ea;border-color:#9333ea" onclick="saveDayOff()"><i class="ti ti-beach"></i> Lançar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal transportar saldo -->
+<div class="modal-bg" id="modal-transp">
+  <div class="modal" style="max-width:440px">
+    <h2><i class="ti ti-transfer" style="color:#007e6a"></i> Transportar saldo</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:14px">Cria um lançamento de saldo no mês destino com o valor do saldo acumulado no mês origem.</p>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Colaborador</label>
+        <select id="tr-colab" onchange="atualizaSaldoTransp()" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Saldo disponível</label>
+        <input type="text" id="tr-saldo-info" readonly style="font-family:monospace;font-size:14px;font-weight:600;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%;background:#f5f5f0;color:#007e6a">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Mês destino</label>
+        <input type="month" id="tr-mes-dest" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
+      </div>
+      <div class="form-row">
+        <label>Valor a transportar (h)</label>
+        <input type="number" id="tr-valor" step="0.5" min="0" placeholder="Ex: 4.5" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Observação</label>
+      <input type="text" id="tr-obs" placeholder="Ex: saldo transportado de setembro/2026" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeTransp()">Cancelar</button>
+      <button class="btn-save" onclick="saveTransp()"><i class="ti ti-transfer"></i> Transportar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal compensar rápido (pelo card) -->
+<div class="modal-bg" id="modal-comp-quick">
+  <div class="modal" style="max-width:400px">
+    <h2><i class="ti ti-clock-minus" style="color:#007e6a"></i> Lançar compensação</h2>
+    <p id="cq-nome" style="font-size:13px;font-weight:600;color:#007e6a;margin-bottom:12px"></p>
+    <p id="cq-saldo" style="font-size:12px;color:#888;margin-bottom:12px"></p>
+    <div class="form-row">
+      <label>Dia da compensação</label>
+      <input type="date" id="cq-data">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Horário de início</label>
+        <input type="time" id="cq-ini" oninput="calcHorasQuick()">
+      </div>
+      <div class="form-row">
+        <label>Horário de término</label>
+        <input type="time" id="cq-fim" oninput="calcHorasQuick()">
+      </div>
+    </div>
+    <div class="form-row">
+      <input type="text" id="cq-horas-txt" readonly placeholder="0h00" style="font-family:monospace;font-size:14px;font-weight:600;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%;background:#f5f5f0;color:#007e6a">
+      <input type="hidden" id="cq-horas">
+    </div>
+    <div class="form-row">
+      <label>Observação (opcional)</label>
+      <textarea id="cq-obs" rows="2" placeholder="Ex: saída antecipada..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeCompQuick()">Cancelar</button>
+      <button class="btn-save" onclick="saveCompQuick()">Lançar compensação</button>
     </div>
   </div>
 </div>
@@ -576,7 +725,8 @@ const db = firebase.database();
 const refHoras  = db.ref('horasextras');
 const refComp   = db.ref('compensacoes');
 const refSaldo  = db.ref('saldoinicial');
-const refColabs = db.ref('colaboradores');
+const refColabs  = db.ref('colaboradores');
+const refDayOff  = db.ref('dayoffs');
 
 /* ===================================================================
    CADASTRO ÚNICO DE COLABORADORES
@@ -766,6 +916,8 @@ db.ref('.info/connected').on('value', snap => {
   else { dot.className='dot-offline'; label.textContent='Reconectando...'; }
 });
 
+let dayoffs = {};
+refDayOff.on('value', snap => { dayoffs = snap.val() || {}; renderDayOff(); renderCalDayOff(); });
 refHoras.on('value', snap => { records = snap.val() || {}; renderTable(); renderComp(); });
 refComp.on('value',  snap => { comps   = snap.val() || {}; renderTable(); renderComp(); });
 refSaldo.on('value', snap => { saldos  = snap.val() || {}; renderComp(); });
@@ -871,8 +1023,11 @@ function valorNome(prefixo){
 function setView(v){
   document.getElementById('view-horas').classList.toggle('active', v==='horas');
   document.getElementById('view-comp').classList.toggle('active', v==='comp');
+  document.getElementById('view-dayoff').classList.toggle('active', v==='dayoff');
   document.getElementById('mtab-horas').classList.toggle('active', v==='horas');
   document.getElementById('mtab-comp').classList.toggle('active', v==='comp');
+  document.getElementById('mtab-dayoff').classList.toggle('active', v==='dayoff');
+  if(v==='dayoff') renderCalDayOff();
 }
 function setFilter(f, el){
   filtroAtivo = f;
@@ -881,7 +1036,7 @@ function setFilter(f, el){
   renderTable();
 }
 function formatDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
-function formatMes(m){ if(!m) return '—'; const [y,mo]=m.split('-'); const l=new Date(y,mo-1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); return l.charAt(0).toUpperCase()+l.slice(1); }
+function formatMes(m){ if(!m) return '—'; const [y,mo]=m.split('-'); const l=new Date(Number(y),Number(mo)-1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); return l.charAt(0).toUpperCase()+l.slice(1); }
 function initials(n){ if(!n) return '?'; return String(n).trim().split(/\s+/).filter(w=>!MINUSCULAS.includes(semAcento(w.toLowerCase()))).map(w=>w[0]).filter((w,i,a)=>i===0||i===a.length-1).slice(0,2).join('').toUpperCase(); }
 function statusClass(s){ return s==='Aprovado'?'b-aprovado':s==='Negado'?'b-negado':'b-pendente'; }
 function avatarClass(nome){ return chave(nome).startsWith('g')?'avatar avatar-g':'avatar'; }
@@ -1055,9 +1210,16 @@ function renderRanking(noMes, mesSel){
   document.getElementById('ranking-list').innerHTML = lista.map(([nome,h])=>{
     const comp = mapaComp[nome]||0;
     const pct = Math.round((h/max)*100);
+    const saldo = saldoDe(nome);
     return `
       <div class="ranking-item">
-        <div class="ranking-name" title="${nome}">${nome}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div class="ranking-name" title="${nome}">${nome}</div>
+          <button onclick="openCompQuick('${nome.replace(/'/g,"\\'")}')" title="Lançar compensação para ${nome}"
+            style="font-family:inherit;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;border:1px solid #007e6a;background:#e0f5f0;color:#007e6a;cursor:pointer;white-space:nowrap;flex-shrink:0">
+            <i class="ti ti-clock-minus" style="font-size:12px"></i> Compensar
+          </button>
+        </div>
         <div class="ranking-horas">${fmtHM(h)}<span>aprovadas</span></div>
         <div class="ranking-bar-bg"><div class="ranking-bar-fill" style="width:${pct}%"></div></div>
         <div class="ranking-sub"><span>Compensadas no período</span><b>${comp>0?'−'+fmtHM(comp):'0h00'}</b></div>
@@ -1778,7 +1940,184 @@ function executarZerar(){
   }).catch(err=>showToast('Erro: ' + err.message));
 }
 
-['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr','modal-zerar','modal-colabs'].forEach(id=>{
+/* ===== DAY OFF ===== */
+let calDoYear  = new Date().getFullYear();
+let calDoMonth = new Date().getMonth();
+let calDoColorMap = {};
+function calDoColor(nome){
+  const n=canonico(nome)||nome;
+  if(!calDoColorMap[n]){
+    const used=Object.values(calDoColorMap);
+    const pool=['#9333ea','#db2777','#0891b2','#16a34a','#ea580c','#854d0e','#0f766e','#7c3aed'];
+    const free=pool.filter(c=>!used.includes(c));
+    calDoColorMap[n]=free.length?free[0]:pool[Object.keys(calDoColorMap).length%pool.length];
+  }
+  return calDoColorMap[n];
+}
+function calDoMove(d){ calDoMonth+=d; if(calDoMonth>11){calDoMonth=0;calDoYear++;} if(calDoMonth<0){calDoMonth=11;calDoYear--;} renderCalDayOff(); }
+function calDoToday(){ const n=new Date(); calDoYear=n.getFullYear(); calDoMonth=n.getMonth(); renderCalDayOff(); }
+function renderCalDayOff(){
+  const ym=`${calDoYear}-${String(calDoMonth+1).padStart(2,'0')}`;
+  const label=new Date(calDoYear,calDoMonth,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const lc=label.charAt(0).toUpperCase()+label.slice(1);
+  const el1=document.getElementById('cal-do-month-label'); if(el1) el1.textContent=lc;
+  const el2=document.getElementById('cal-do-nav-label'); if(el2) el2.textContent=lc;
+  const sel=document.getElementById('cal-do-colab');
+  const fC=sel?sel.value:'';
+  const allN=[...new Set(Object.values(dayoffs).map(d=>canonico(d.colaborador)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  if(sel){
+    const pv=sel.value;
+    sel.innerHTML='<option value="">Todos os colaboradores</option>'+allN.map(n=>`<option value="${n}" ${n===pv?'selected':''}>${n}</option>`).join('');
+    sel.value=pv;
+  }
+  const evts=Object.values(dayoffs).filter(d=>{
+    if(!d||!d.data||!d.data.startsWith(ym)) return false;
+    if(fC && canonico(d.colaborador)!==fC) return false;
+    return true;
+  });
+  const byDay={};
+  evts.forEach(d=>{ const day=parseInt(d.data.split('-')[2],10); if(!byDay[day])byDay[day]=[]; byDay[day].push(d); });
+  const firstDow=new Date(calDoYear,calDoMonth,1).getDay();
+  const daysInMonth=new Date(calDoYear,calDoMonth+1,0).getDate();
+  const daysInPrev=new Date(calDoYear,calDoMonth,0).getDate();
+  const todayStr=new Date().toISOString().slice(0,10);
+  const DOWS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  let html=DOWS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=firstDow-1;i>=0;i--) html+=`<div class="cal-day other-month"><span class="cal-day-num">${daysInPrev-i}</span></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${calDoYear}-${String(calDoMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const items=(byDay[d]||[]).sort((a,b)=>canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR'));
+    const evtHtml=items.map(c=>{
+      const col=calDoColor(c.colaborador);
+      const nm=canonico(c.colaborador)||c.colaborador||'—';
+      const tip=(nm+(c.obs?' · '+c.obs:'')).replace(/"/g,'&quot;');
+      return `<div class="cal-event" style="background:${col}18;color:${col};border-left:3px solid ${col}" title="${tip}">
+        <span style="font-weight:700">${nm.split(' ')[0]}</span> <span style="opacity:.8;font-size:9px">day off</span>
+      </div>`;
+    }).join('');
+    html+=`<div class="cal-day${ds===todayStr?' today':''}">
+      <span class="cal-day-num">${d}</span>
+      ${evtHtml}
+    </div>`;
+  }
+  const trailing=(firstDow+daysInMonth)%7;
+  for(let d=1;d<=(trailing?7-trailing:0);d++) html+=`<div class="cal-day other-month"><span class="cal-day-num">${d}</span></div>`;
+  const g=document.getElementById('cal-do-grid'); if(g) g.innerHTML=html;
+  const colsNoMes=[...new Set(evts.map(d=>canonico(d.colaborador)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const leg=document.getElementById('cal-do-legend');
+  if(leg) leg.innerHTML=colsNoMes.length
+    ?colsNoMes.map(n=>`<div style="display:flex;align-items:center;gap:4px"><div class="cal-legend-dot" style="background:${calDoColor(n)}"></div><span style="font-size:10px">${n}</span></div>`).join('')
+    :'<span style="color:#aaa;font-size:11px">Nenhum day off neste mês.</span>';
+  renderDayOff();
+}
+function renderDayOff(){
+  const all=Object.entries(dayoffs).map(([id,d])=>({...d,id})).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
+  const tbody=document.getElementById('dayoff-tbody'); if(!tbody) return;
+  const countEl=document.getElementById('dayoff-count'); if(countEl) countEl.textContent=`${all.length} registro${all.length!==1?'s':''}`;
+  if(!all.length){ tbody.innerHTML=''; document.getElementById('dayoff-empty').style.display='block'; return; }
+  document.getElementById('dayoff-empty').style.display='none';
+  tbody.innerHTML=all.map((d,i)=>`
+    <tr>
+      <td style="color:#999;font-size:11px">${i+1}</td>
+      <td>${celulaNome(d.colaborador)}</td>
+      <td>${formatDate(d.data)}</td>
+      <td style="color:#888;font-size:12px">${d.obs||'—'}</td>
+      <td style="font-size:11px;color:#888">${d.criadoEmTxt||''}</td>
+      <td><button class="btn-icon btn-del" onclick="delDayOff('${d.id}')"><i class="ti ti-trash"></i></button></td>
+    </tr>`).join('');
+}
+function openDayOff(){
+  preencheSelectColab('do-colaborador-sel','do-colaborador');
+  document.getElementById('do-data').value=new Date().toISOString().slice(0,10);
+  document.getElementById('do-obs').value='';
+  document.getElementById('modal-dayoff').classList.add('open');
+}
+function closeDayOff(){ document.getElementById('modal-dayoff').classList.remove('open'); }
+function saveDayOff(){
+  const sel=document.getElementById('do-colaborador-sel');
+  const colaborador=canonico(sel.value==='outro'?document.getElementById('do-colaborador-outro').value.trim():sel.value);
+  const data=document.getElementById('do-data').value;
+  const obs=document.getElementById('do-obs').value.trim();
+  if(!colaborador||!data){ showToast('Preencha colaborador e data.'); return; }
+  const agora=new Date().toLocaleString('pt-BR');
+  refDayOff.push({colaborador,data,obs,criadoEm:Date.now(),criadoEmTxt:agora});
+  closeDayOff(); showToast('Day off lançado!');
+}
+function delDayOff(id){ if(!confirm('Excluir este day off?')) return; refDayOff.child(id).remove(); }
+
+/* ===== TRANSPORTAR SALDO ===== */
+function openTransp(){
+  const sel=document.getElementById('tr-colab');
+  const nomes=[...new Set([...Object.values(saldos).map(s=>s&&canonico(s.colaborador)),...colabsDinamicos].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  sel.innerHTML='<option value="">Selecione...</option>'+nomes.map(n=>`<option value="${n}">${n}</option>`).join('');
+  document.getElementById('tr-saldo-info').value='—';
+  document.getElementById('tr-valor').value='';
+  document.getElementById('tr-obs').value='';
+  const prox=new Date(); prox.setMonth(prox.getMonth()+1);
+  document.getElementById('tr-mes-dest').value=`${prox.getFullYear()}-${String(prox.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('modal-transp').classList.add('open');
+}
+function closeTransp(){ document.getElementById('modal-transp').classList.remove('open'); }
+function atualizaSaldoTransp(){
+  const nome=document.getElementById('tr-colab').value;
+  if(!nome){ document.getElementById('tr-saldo-info').value='—'; document.getElementById('tr-valor').value=''; return; }
+  const s=saldoDe(nome);
+  document.getElementById('tr-saldo-info').value=fmtHM(Math.abs(s))+(s<0?' (negativo)':'');
+  document.getElementById('tr-valor').value=(Math.max(0,s)).toFixed(2);
+}
+function saveTransp(){
+  const nome=document.getElementById('tr-colab').value;
+  const mes=document.getElementById('tr-mes-dest').value;
+  const val=parseFloat(document.getElementById('tr-valor').value)||0;
+  const obs=document.getElementById('tr-obs').value.trim()||`Saldo transportado`;
+  if(!nome||!mes||val<=0){ showToast('Preencha todos os campos e valor > 0.'); return; }
+  const agora=new Date().toLocaleString('pt-BR');
+  refSaldo.push({colaborador:nome, mes, horas:val, obs, criadoEm:Date.now(), criadoEmTxt:agora});
+  closeTransp(); showToast(`Saldo transportado para ${formatMes(mes)}!`);
+}
+
+/* ===== COMPENSAR RÁPIDO (pelo card) ===== */
+let compQuickNome='';
+function openCompQuick(nome){
+  compQuickNome=nome;
+  const s=saldoDe(nome);
+  document.getElementById('cq-nome').textContent=nome;
+  document.getElementById('cq-saldo').textContent=`Saldo disponível: ${fmtHM(Math.abs(s))}${s<0?' (negativo)':''}`;
+  document.getElementById('cq-data').value=new Date().toISOString().slice(0,10);
+  document.getElementById('cq-ini').value='';
+  document.getElementById('cq-fim').value='';
+  document.getElementById('cq-horas-txt').value='';
+  document.getElementById('cq-horas').value='';
+  document.getElementById('cq-obs').value='';
+  document.getElementById('modal-comp-quick').classList.add('open');
+}
+function closeCompQuick(){ document.getElementById('modal-comp-quick').classList.remove('open'); }
+function calcHorasQuick(){
+  const ini=document.getElementById('cq-ini').value;
+  const fim=document.getElementById('cq-fim').value;
+  if(!ini||!fim){ document.getElementById('cq-horas-txt').value=''; document.getElementById('cq-horas').value=''; return; }
+  const [hi,mi]=ini.split(':').map(Number);
+  const [hf,mf]=fim.split(':').map(Number);
+  let diff=(hf*60+mf)-(hi*60+mi);
+  if(diff<0) diff+=1440;
+  const h=Math.floor(diff/60), m=diff%60;
+  document.getElementById('cq-horas-txt').value=`${h}h${String(m).padStart(2,'0')}`;
+  document.getElementById('cq-horas').value=(diff/60).toFixed(4);
+}
+function saveCompQuick(){
+  const colaborador=compQuickNome;
+  const data=document.getElementById('cq-data').value;
+  const horaIni=document.getElementById('cq-ini').value;
+  const horaFim=document.getElementById('cq-fim').value;
+  const horas=parseFloat(document.getElementById('cq-horas').value)||0;
+  const obs=document.getElementById('cq-obs').value.trim();
+  if(!data||!horas){ showToast('Preencha data e horários.'); return; }
+  const agora=new Date().toLocaleString('pt-BR');
+  refComp.push({colaborador,data,horaIni,horaFim,horas,obs,criadoEm:Date.now(),criadoEmTxt:agora});
+  closeCompQuick(); showToast(`Compensação lançada para ${colaborador}!`);
+}
+
+['modal','modal-aprov','modal-comp','modal-saldo','modal-import','modal-padr','modal-zerar','modal-colabs','modal-dayoff','modal-transp','modal-comp-quick'].forEach(id=>{
   const el = document.getElementById(id);
   el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
 });
