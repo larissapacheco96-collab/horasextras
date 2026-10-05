@@ -227,6 +227,11 @@ table.small{min-width:720px}
 
     <div class="toolbar">
       <input type="text" id="search-input" placeholder="Buscar por líder, colaborador, motivo..." oninput="renderTable()">
+      <select id="horas-sort" onchange="renderTable()" style="font-size:12px;padding:6px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer">
+        <option value="data">📅 Data (mais recente)</option>
+        <option value="nome">A–Z Colaborador</option>
+        <option value="recente">⬇ Último lançado</option>
+      </select>
       <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i> Nova solicitação</button>
       <div class="sync-badge"><span class="dot-offline" id="dot-status"></span> <span id="sync-label">Conectando...</span></div>
     </div>
@@ -490,38 +495,35 @@ table.small{min-width:720px}
 
 <!-- Modal transportar saldo -->
 <div class="modal-bg" id="modal-transp">
-  <div class="modal" style="max-width:440px">
+  <div class="modal" style="max-width:480px">
     <h2><i class="ti ti-transfer" style="color:#007e6a"></i> Transportar saldo</h2>
-    <p style="font-size:12px;color:#888;margin-bottom:14px">Cria um lançamento de saldo no mês destino com o valor do saldo acumulado no mês origem.</p>
-    <div class="form-grid">
-      <div class="form-row">
-        <label>Colaborador</label>
-        <select id="tr-colab" onchange="atualizaSaldoTransp()" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
-          <option value="">Selecione...</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>Saldo disponível</label>
-        <input type="text" id="tr-saldo-info" readonly style="font-family:monospace;font-size:14px;font-weight:600;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%;background:#f5f5f0;color:#007e6a">
-      </div>
+    <p style="font-size:12px;color:#888;margin-bottom:14px">Selecione um ou mais colaboradores. Cada um receberá um lançamento de saldo no mês destino com seu saldo atual.</p>
+
+    <!-- Lista de colaboradores com checkbox -->
+    <div class="form-row" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+        <span>Colaboradores</span>
+        <span style="display:flex;gap:6px">
+          <button onclick="transpSelAll(true)" style="font-size:10px;padding:2px 8px;border:1px solid #ccc;border-radius:6px;background:#f5f5f2;cursor:pointer;font-family:inherit">Todos</button>
+          <button onclick="transpSelAll(false)" style="font-size:10px;padding:2px 8px;border:1px solid #ccc;border-radius:6px;background:#f5f5f2;cursor:pointer;font-family:inherit">Nenhum</button>
+        </span>
+      </label>
+      <div id="tr-colab-list" style="max-height:200px;overflow-y:auto;border:1px solid #e4e2dc;border-radius:8px;background:#fafaf8"></div>
     </div>
+
     <div class="form-grid">
       <div class="form-row">
         <label>Mês destino</label>
         <input type="month" id="tr-mes-dest" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
       </div>
       <div class="form-row">
-        <label>Valor a transportar (h)</label>
-        <input type="number" id="tr-valor" step="0.5" min="0" placeholder="Ex: 4.5" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
+        <label>Observação</label>
+        <input type="text" id="tr-obs" placeholder="Ex: saldo de set/2026" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
       </div>
-    </div>
-    <div class="form-row">
-      <label>Observação</label>
-      <input type="text" id="tr-obs" placeholder="Ex: saldo transportado de setembro/2026" style="font-family:inherit;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:8px;width:100%">
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeTransp()">Cancelar</button>
-      <button class="btn-save" onclick="saveTransp()"><i class="ti ti-transfer"></i> Transportar</button>
+      <button class="btn-save" onclick="saveTransp()"><i class="ti ti-transfer"></i> Transportar selecionados</button>
     </div>
   </div>
 </div>
@@ -1144,7 +1146,13 @@ function renderTable(){
       const alvo = chave(canonico(r.lider)+' '+canonico(r.colaborador)+' '+(r.motivo||''));
       return matchFiltro && (!q || alvo.includes(q));
     })
-    .sort((a,b)=> (b.criadoEm||0)-(a.criadoEm||0));
+    .sort((a,b)=>{
+      const sortH = document.getElementById('horas-sort')?.value || 'data';
+      if(sortH==='recente') return (b.criadoEm||0)-(a.criadoEm||0);
+      if(sortH==='nome') return canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR') || (b.data||'').localeCompare(a.data||'');
+      // padrão: data desc, depois colaborador A-Z
+      return (b.data||'').localeCompare(a.data||'') || canonico(a.colaborador).localeCompare(canonico(b.colaborador),'pt-BR');
+    });
 
   const tbody = document.getElementById('tbody');
   if(!filtered.length){
@@ -1383,10 +1391,17 @@ function renderCal(){
 }
 // ── FIM CALENDÁRIO ───────────────────────────────────────────────────────────
 
+function sanitizeMes(m){
+  if(!m) return '';
+  const s = String(m).trim();
+  // aceitar só formato YYYY-MM com ano entre 2020 e 2099
+  if(/^\d{4}-\d{2}$/.test(s) && parseInt(s.substring(0,4))>=2020 && parseInt(s.substring(0,4))<=2099) return s;
+  return '';
+}
 function mesesDisponiveis(){
   const set = new Set();
-  Object.values(records).forEach(r=>{ const m=(r&&r.data||'').substring(0,7); if(m && parseInt(m.substring(0,4))>=2020) set.add(m); });
-  Object.values(saldos).forEach(s=>{ if(s&&s.mes) set.add(s.mes); });
+  Object.values(records).forEach(r=>{ const m=sanitizeMes((r&&r.data||'').substring(0,7)); if(m) set.add(m); });
+  Object.values(saldos).forEach(s=>{ const m=sanitizeMes(s&&s.mes); if(m) set.add(m); });
   return [...set].sort().reverse();
 }
 function setMesRef(v){ mesRef = v; renderComp(); }
@@ -1442,8 +1457,16 @@ function renderComp(){
       const vcls = m.saldo>0.001?'':(m.saldo<-0.001?'neg':'zero');
       return `
       <div class="saldo-card ${cls}">
-        <div class="saldo-nome" title="${m.nome}">${m.nome}</div>
-        <div class="saldo-meta">${timeDe(m.nome)}${cargoDe(m.nome)?' · '+cargoDe(m.nome):''}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+          <div>
+            <div class="saldo-nome" title="${m.nome}">${m.nome}</div>
+            <div class="saldo-meta">${timeDe(m.nome)}${cargoDe(m.nome)?' · '+cargoDe(m.nome):''}</div>
+          </div>
+          <button onclick="openCompQuick('${m.nome.replace(/'/g,"\\'")}')"
+            style="flex-shrink:0;font-family:inherit;font-size:10px;font-weight:600;padding:4px 9px;border-radius:20px;border:1px solid #007e6a;background:#e0f5f0;color:#007e6a;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:3px">
+            <i class="ti ti-clock-minus" style="font-size:12px"></i> Compensar
+          </button>
+        </div>
         <div class="saldo-val ${vcls}">${fmtHM(m.saldo)}<span>disponível</span></div>
         <div class="saldo-break">
           <div>Saldo do Ponto</div><div style="text-align:right"><b>${fmtHM(m.ponto)}</b></div>
@@ -1527,7 +1550,7 @@ function renderComp(){
       <tr>
         <td style="color:#999;font-size:11px">${i+1}</td>
         <td>${celulaNome(s.colaborador)}</td>
-        <td style="white-space:nowrap">${formatMes(s.mes)}</td>
+        <td style="white-space:nowrap">${formatMes(sanitizeMes(s.mes)||s.mes)}</td>
         <td><strong style="color:${h<0?'#a32d2d':'#185fa5'}">${h>=0?'+':''}${fmtHM(h)}</strong></td>
         <td style="max-width:220px">${s.obs||'—'}</td>
         <td style="font-size:11px;color:#888;white-space:nowrap">${s.criadoEmTxt||'—'}</td>
@@ -2045,35 +2068,48 @@ function saveDayOff(){
 }
 function delDayOff(id){ if(!confirm('Excluir este day off?')) return; refDayOff.child(id).remove(); }
 
-/* ===== TRANSPORTAR SALDO ===== */
+/* ===== TRANSPORTAR SALDO (multi-colaborador) ===== */
 function openTransp(){
-  const sel=document.getElementById('tr-colab');
-  const nomes=[...new Set([...Object.values(saldos).map(s=>s&&canonico(s.colaborador)),...colabsDinamicos].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  sel.innerHTML='<option value="">Selecione...</option>'+nomes.map(n=>`<option value="${n}">${n}</option>`).join('');
-  document.getElementById('tr-saldo-info').value='—';
-  document.getElementById('tr-valor').value='';
+  const mapa = calcularSaldos();
+  const nomes = [...new Set([
+    ...Object.values(saldos).map(s=>s&&canonico(s.colaborador)),
+    ...colabsDinamicos
+  ].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
+  const lista = document.getElementById('tr-colab-list');
+  lista.innerHTML = nomes.map(n=>{
+    const s = mapa[n]?.saldo ?? 0;
+    const cor = s>0.001?'#15803d':s<-0.001?'#b91c1c':'#888';
+    return `<label style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid #f0efe9;cursor:pointer;font-size:13px">
+      <input type="checkbox" class="tr-chk" value="${n.replace(/"/g,'&quot;')}" style="width:14px;height:14px;accent-color:#007e6a;cursor:pointer">
+      <span style="flex:1">${n}</span>
+      <span style="font-family:monospace;font-size:12px;font-weight:600;color:${cor}">${fmtHM(Math.abs(s))}${s<0?' ↓':''}</span>
+    </label>`;
+  }).join('') || '<div style="padding:12px;color:#aaa;font-size:13px">Nenhum colaborador.</div>';
+
   document.getElementById('tr-obs').value='';
   const prox=new Date(); prox.setMonth(prox.getMonth()+1);
   document.getElementById('tr-mes-dest').value=`${prox.getFullYear()}-${String(prox.getMonth()+1).padStart(2,'0')}`;
   document.getElementById('modal-transp').classList.add('open');
 }
+function transpSelAll(v){ document.querySelectorAll('.tr-chk').forEach(c=>c.checked=v); }
 function closeTransp(){ document.getElementById('modal-transp').classList.remove('open'); }
-function atualizaSaldoTransp(){
-  const nome=document.getElementById('tr-colab').value;
-  if(!nome){ document.getElementById('tr-saldo-info').value='—'; document.getElementById('tr-valor').value=''; return; }
-  const s=saldoDe(nome);
-  document.getElementById('tr-saldo-info').value=fmtHM(Math.abs(s))+(s<0?' (negativo)':'');
-  document.getElementById('tr-valor').value=(Math.max(0,s)).toFixed(2);
-}
 function saveTransp(){
-  const nome=document.getElementById('tr-colab').value;
-  const mes=document.getElementById('tr-mes-dest').value;
-  const val=parseFloat(document.getElementById('tr-valor').value)||0;
-  const obs=document.getElementById('tr-obs').value.trim()||`Saldo transportado`;
-  if(!nome||!mes||val<=0){ showToast('Preencha todos os campos e valor > 0.'); return; }
-  const agora=new Date().toLocaleString('pt-BR');
-  refSaldo.push({colaborador:nome, mes, horas:val, obs, criadoEm:Date.now(), criadoEmTxt:agora});
-  closeTransp(); showToast(`Saldo transportado para ${formatMes(mes)}!`);
+  const mes = document.getElementById('tr-mes-dest').value;
+  const obs = document.getElementById('tr-obs').value.trim() || 'Saldo transportado';
+  const sels = [...document.querySelectorAll('.tr-chk:checked')].map(c=>c.value);
+  if(!mes||!sels.length){ showToast('Selecione ao menos um colaborador e o mês destino.'); return; }
+  const mapa = calcularSaldos();
+  const agora = new Date().toLocaleString('pt-BR');
+  let cnt=0;
+  sels.forEach(nome=>{
+    const val = mapa[nome]?.saldo ?? 0;
+    if(val<=0.001){ return; } // pula saldo zero ou negativo
+    refSaldo.push({colaborador:nome, mes, horas:val, obs, criadoEm:Date.now(), criadoEmTxt:agora});
+    cnt++;
+  });
+  closeTransp();
+  showToast(cnt>0 ? `${cnt} saldo(s) transportado(s) para ${formatMes(mes)}!` : 'Nenhum saldo positivo para transportar.');
 }
 
 /* ===== COMPENSAR RÁPIDO (pelo card) ===== */
