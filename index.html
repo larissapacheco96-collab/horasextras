@@ -1037,7 +1037,13 @@ function setFilter(f, el){
   el.classList.add('active');
   renderTable();
 }
-function formatDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function formatDate(d){
+  if(!d) return '—';
+  const [y,m,day]=d.split('-');
+  const yr=parseInt(y,10);
+  if(isNaN(yr)||yr<2020||yr>2099) return `⚠ data inválida`;
+  return `${day}/${m}/${y}`;
+}
 function formatMes(m){ if(!m) return '—'; const [y,mo]=m.split('-'); const l=new Date(Number(y),Number(mo)-1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); return l.charAt(0).toUpperCase()+l.slice(1); }
 function initials(n){ if(!n) return '?'; return String(n).trim().split(/\s+/).filter(w=>!MINUSCULAS.includes(semAcento(w.toLowerCase()))).map(w=>w[0]).filter((w,i,a)=>i===0||i===a.length-1).slice(0,2).join('').toUpperCase(); }
 function statusClass(s){ return s==='Aprovado'?'b-aprovado':s==='Negado'?'b-negado':'b-pendente'; }
@@ -1457,14 +1463,14 @@ function renderComp(){
       const vcls = m.saldo>0.001?'':(m.saldo<-0.001?'neg':'zero');
       return `
       <div class="saldo-card ${cls}">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
-          <div>
-            <div class="saldo-nome" title="${m.nome}">${m.nome}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:2px">
+          <div style="min-width:0;flex:1">
+            <div class="saldo-nome" title="${m.nome}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.nome}</div>
             <div class="saldo-meta">${timeDe(m.nome)}${cargoDe(m.nome)?' · '+cargoDe(m.nome):''}</div>
           </div>
           <button onclick="openCompQuick('${m.nome.replace(/'/g,"\\'")}')"
-            style="flex-shrink:0;font-family:inherit;font-size:10px;font-weight:600;padding:4px 9px;border-radius:20px;border:1px solid #007e6a;background:#e0f5f0;color:#007e6a;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:3px">
-            <i class="ti ti-clock-minus" style="font-size:12px"></i> Compensar
+            style="flex-shrink:0;font-family:inherit;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;border:1px solid #007e6a;background:#e0f5f0;color:#007e6a;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:3px;margin-top:1px">
+            <i class="ti ti-clock-minus" style="font-size:11px"></i> Compensar
           </button>
         </div>
         <div class="saldo-val ${vcls}">${fmtHM(m.saldo)}<span>disponível</span></div>
